@@ -1,6 +1,7 @@
 "use client";
 
-import {useState, useRef, useEffect} from "react";
+import {useEffect, useRef, useState} from "react";
+import styles from "./GamePanel.module.css";
 
 type GamePanelProps = {
     plate: number;
@@ -28,6 +29,7 @@ export default function GamePanel({
     const [hintCount, setHintCount] = useState(0);
 
     const formattedPlate = plate.toString().padStart(2, "0");
+
     const hintText = provinceName
         .split("")
         .map((letter, index) => {
@@ -44,7 +46,10 @@ export default function GamePanel({
     }, [provinceName]);
 
     function handleSubmit() {
-        if (answer.toLocaleLowerCase("tr-TR") === provinceName.toLocaleLowerCase("tr-TR")) {
+        if (
+            answer.toLocaleLowerCase("tr-TR") ===
+            provinceName.toLocaleLowerCase("tr-TR")
+        ) {
             setMessage("");
             setAnswer("");
             setHintCount(0);
@@ -63,27 +68,29 @@ export default function GamePanel({
         return (
             <section
                 key={`${provinceName}-${phase}`}
-                className="game-panel game-panel-enter"
+                className={`${styles.gamePanel} ${styles.gamePanelEnter}`}
             >
-                <div className="plate-badge">{formattedPlate}</div>
+                <div className={styles.plateBadge}>
+                    {formattedPlate}
+                </div>
 
                 <h2>{provinceName}</h2>
 
-                <p className="panel-description">
+                <p className={styles.panelDescription}>
                     {provinceName} ilini haritada bul.
                 </p>
 
                 <button
-                    className="secondary-button"
+                    className={styles.secondaryButton}
                     type="button"
                     onClick={onMapHintAction}
                 >
                     İpucu
                 </button>
 
-                <div className="panel-feedback">
+                <div className={styles.panelFeedback}>
                     {mapHintLevel >= 2 && (
-                        <p className="hint-text">
+                        <p className={styles.hintText}>
                             Komşu iller: {neighbors.join(", ")}
                         </p>
                     )}
@@ -95,9 +102,11 @@ export default function GamePanel({
     return (
         <section
             key={`${provinceName}-${phase}`}
-            className="game-panel game-panel-enter"
+            className={`${styles.gamePanel} ${styles.gamePanelEnter}`}
         >
-            <div className="plate-badge">{formattedPlate}</div>
+            <div className={styles.plateBadge}>
+                {formattedPlate}
+            </div>
 
             <h2>Bu plaka hangi ile ait?</h2>
 
@@ -107,11 +116,13 @@ export default function GamePanel({
                     handleSubmit();
                 }}
             >
-                <div className="input-wrapper">
+                <div className={styles.inputWrapper}>
                     <input
                         ref={inputRef}
                         lang="tr"
-                        className={`answer-input ${message ? "answer-input-error" : ""}`}
+                        className={`${styles.answerInput} ${
+                            message ? styles.answerInputError : ""
+                        }`}
                         type="text"
                         placeholder="İl Adını Yaz"
                         value={answer}
@@ -119,26 +130,29 @@ export default function GamePanel({
                             setAnswer(event.target.value);
                         }}
                     />
-                    <span className="error-message">
+
+                    <span className={styles.errorMessage}>
                         {message}
                     </span>
                 </div>
 
-
-                <div className="button-row">
+                <div className={styles.buttonRow}>
                     <button
-                        className="primary-button"
+                        className={styles.primaryButton}
                         type="submit"
                     >
                         Cevapla
                     </button>
 
                     <button
-                        className="secondary-button"
+                        className={styles.secondaryButton}
                         type="button"
                         onClick={() => {
                             setHintCount((current) =>
-                                Math.min(current + 1, provinceName.length),
+                                Math.min(
+                                    current + 1,
+                                    provinceName.length,
+                                )
                             );
                         }}
                     >
@@ -147,9 +161,14 @@ export default function GamePanel({
                 </div>
             </form>
 
-            <div className="panel-feedback">
+            <div className={styles.panelFeedback}>
                 {hintCount > 0 ? (
-                    <p lang="tr" className="hint-text">{hintText}</p>
+                    <p
+                        lang="tr"
+                        className={styles.hintText}
+                    >
+                        {hintText}
+                    </p>
                 ) : null}
             </div>
         </section>
