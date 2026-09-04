@@ -1,6 +1,6 @@
 "use client";
 
-import {useState} from "react";
+import {useState, useRef, useEffect} from "react";
 
 type GamePanelProps = {
     plate: number;
@@ -21,6 +21,8 @@ export default function GamePanel({
                                       mapHintLevel,
                                       neighbors,
                                   }: GamePanelProps) {
+    const inputRef = useRef<HTMLInputElement>(null);
+
     const [answer, setAnswer] = useState("");
     const [message, setMessage] = useState("");
     const [hintCount, setHintCount] = useState(0);
@@ -37,6 +39,10 @@ export default function GamePanel({
         })
         .join(" ");
 
+    useEffect(() => {
+        inputRef.current?.focus();
+    }, [provinceName]);
+
     function handleSubmit() {
         if (answer.toLocaleLowerCase("tr-TR") === provinceName.toLocaleLowerCase("tr-TR")) {
             setMessage("");
@@ -46,47 +52,51 @@ export default function GamePanel({
             return;
         }
 
-        setMessage("Bu değil, tekrar dene.");
+        setMessage("Hmm, tekrar dene!");
 
         setTimeout(() => {
             setMessage("");
-        }, 1400);
+        }, 2000);
     }
 
     if (phase === "map") {
-        if (phase === "map") {
-            return (
-                <section className="game-panel">
-                    <div className="plate-badge">{formattedPlate}</div>
+        return (
+            <section
+                key={`${provinceName}-${phase}`}
+                className="game-panel game-panel-enter"
+            >
+                <div className="plate-badge">{formattedPlate}</div>
 
-                    <h2>{provinceName}</h2>
+                <h2>{provinceName}</h2>
 
-                    <p className="panel-description">
-                        {provinceName} ilini haritada bul.
-                    </p>
+                <p className="panel-description">
+                    {provinceName} ilini haritada bul.
+                </p>
 
-                    <button
-                        className="secondary-button"
-                        type="button"
-                        onClick={onMapHintAction}
-                    >
-                        İpucu
-                    </button>
+                <button
+                    className="secondary-button"
+                    type="button"
+                    onClick={onMapHintAction}
+                >
+                    İpucu
+                </button>
 
-                    <div className="panel-feedback">
-                        {mapHintLevel >= 2 && (
-                            <p className="hint-text">
-                                Komşu iller: {neighbors.join(", ")}
-                            </p>
-                        )}
-                    </div>
-                </section>
-            );
-        }
+                <div className="panel-feedback">
+                    {mapHintLevel >= 2 && (
+                        <p className="hint-text">
+                            Komşu iller: {neighbors.join(", ")}
+                        </p>
+                    )}
+                </div>
+            </section>
+        );
     }
 
     return (
-        <section className="game-panel">
+        <section
+            key={`${provinceName}-${phase}`}
+            className="game-panel game-panel-enter"
+        >
             <div className="plate-badge">{formattedPlate}</div>
 
             <h2>Bu plaka hangi ile ait?</h2>
@@ -97,15 +107,23 @@ export default function GamePanel({
                     handleSubmit();
                 }}
             >
-                <input
-                    className="answer-input"
-                    type="text"
-                    placeholder="İl adını yaz"
-                    value={answer}
-                    onChange={(event) => {
-                        setAnswer(event.target.value);
-                    }}
-                />
+                <div className="input-wrapper">
+                    <input
+                        ref={inputRef}
+                        lang="tr"
+                        className={`answer-input ${message ? "answer-input-error" : ""}`}
+                        type="text"
+                        placeholder="İl Adını Yaz"
+                        value={answer}
+                        onChange={(event) => {
+                            setAnswer(event.target.value);
+                        }}
+                    />
+                    <span className="error-message">
+                        {message}
+                    </span>
+                </div>
+
 
                 <div className="button-row">
                     <button
@@ -130,10 +148,8 @@ export default function GamePanel({
             </form>
 
             <div className="panel-feedback">
-                {message ? (
-                    <p className="feedback-message">{message}</p>
-                ) : hintCount > 0 ? (
-                    <p className="hint-text">{hintText}</p>
+                {hintCount > 0 ? (
+                    <p lang="tr" className="hint-text">{hintText}</p>
                 ) : null}
             </div>
         </section>
