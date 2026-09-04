@@ -82,6 +82,7 @@ type TurkeyMapSvgProps = {
     highlightedProvinces?: string[];
     completedProvinces?: string[];
     lastCompletedProvince: string | null;
+    hoveredProvince: string | null;
 };
 
 export default function TurkeyMapSvg({
@@ -90,12 +91,24 @@ export default function TurkeyMapSvg({
                                          highlightedProvinces = [],
                                          completedProvinces = [],
                                          lastCompletedProvince,
+                                         hoveredProvince,
                                      }: TurkeyMapSvgProps) {
 
     const svgRef = useRef<SVGSVGElement>(null);
     const isMapComplete = completedProvinces.length === 81;
 
     const [provinceLabels, setProvinceLabels] = useState<ProvinceLabel[]>([]);
+
+    const hoveredProvinceStyle = hoveredProvince
+        ? `
+        #turkiye > g[data-iladi="${hoveredProvince}"] { 
+            fill: #3b82f6;
+            stroke: #93c5fd;
+            stroke-width: 1.5;
+            filter: brightness(1.1);
+        }
+    `
+        : "";
 
     const wrongProvinceStyle = wrongProvince
         ? `#turkiye > g[data-iladi="${wrongProvince}"] { fill: red; }`
@@ -222,6 +235,7 @@ export default function TurkeyMapSvg({
                     ${completedProvinceStyle}
                     ${wrongProvinceStyle}
                     ${lastCompletedProvinceStyle}
+                    ${hoveredProvinceStyle}
                 `}
             </style>
             <g

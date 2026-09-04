@@ -4,7 +4,9 @@ import {useEffect, useState} from "react";
 import GamePanel from "@/components/GamePanel";
 import {provinces} from "@/data/provinces";
 import TurkeyMap from "@/components/TurkeyMap";
+import GameSidebar from "@/components/GameSidebar";
 import confetti from "canvas-confetti";
+import styles from "@/app/page.module.css";
 
 type GamePhase = "name" | "map";
 
@@ -12,7 +14,11 @@ export default function Home() {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [phase, setPhase] = useState<GamePhase>("name");
 
-    //Map states
+    // Drawer States
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const [hoveredProvince, setHoveredProvince] = useState<string | null>(null);
+
+    // Map states
     const [wrongProvince, setWrongProvince] = useState<string | null>(null);
     const [mapHintLevel, setMapHintLevel] = useState(0);
     const [completedProvinces, setCompletedProvinces] = useState<string[]>([]);
@@ -22,12 +28,13 @@ export default function Home() {
     const [successMessage, setSuccessMessage] = useState("");
     const [isToastLeaving, setIsToastLeaving] = useState(false);
 
-    //Game completion states
+    // Game completion states
     const [isGameComplete, setIsGameComplete] = useState(false);
 
     const [hasLoadedProgress, setHasLoadedProgress] = useState(false);
 
     const currentProvince = provinces[currentIndex];
+
     const highlightedProvinces = mapHintLevel >= 1
         ? provinces
             .filter((province) => province.region === currentProvince.region)
@@ -60,6 +67,7 @@ export default function Home() {
         if (!hasLoadedProgress) {
             return;
         }
+
         const progress = {
             currentIndex,
             completedProvinces,
@@ -165,55 +173,67 @@ export default function Home() {
     }
 
     return (
-        <main className="game-page">
+        <main className={styles.gamePage}>
             {successMessage && (
                 <div
-                    className={`success-toast ${
-                        isToastLeaving ? "success-toast-leaving" : ""
+                    className={`${styles.successToast} ${
+                        isToastLeaving ? styles.successToastLeaving : ""
                     }`}
                 >
-                    <span className="success-toast-icon">✓</span>
+                    <span className={styles.successToastIcon}>✓</span>
                     {successMessage}
                 </div>
             )}
-            <header className="game-header">
+
+            <header className={styles.gameHeader}>
                 <div>
                     <h1>Plaka Peşinde</h1>
                     <p>{"Türkiye'yi plaka plaka keşfet."}</p>
                 </div>
 
-                <div className="progress">
-                    {completedProvinces.length} / {provinces.length}
+                <div className={styles.headerActions}>
+                    <div className={styles.progress}>
+                        {completedProvinces.length} / {provinces.length}
+                    </div>
+
+                    <button
+                        className={styles.drawerOpenButton}
+                        type="button"
+                        onClick={() => setIsDrawerOpen(true)}
+                    >
+                        ☰
+                    </button>
                 </div>
             </header>
 
-            <section className="map-section">
+            <section className={styles.mapSection}>
                 <TurkeyMap
                     onProvinceClickAction={handleProvinceClick}
                     wrongProvince={wrongProvince}
                     highlightedProvinces={highlightedProvinces}
                     completedProvinces={completedProvinces}
                     lastCompletedProvince={lastCompletedProvince}
+                    hoveredProvince={hoveredProvince}
                 />
             </section>
 
-            <section className="panel-wrapper">
+            <section className={styles.panelWrapper}>
                 {isGameComplete ? (
-                    <section className="game-panel completion-panel">
-                        <div className="completion-icon">✓</div>
+                    <section className={styles.completionPanel}>
+                        <div className={styles.completionIcon}>✓</div>
 
                         <h2>Türkiye tamamlandı!</h2>
 
-                        <p className="completion-text">
+                        <p className={styles.completionText}>
                             81 ilin plaka kodunu ve haritadaki yerini tamamladın.
                         </p>
 
-                        <div className="completion-progress">
+                        <div className={styles.completionProgress}>
                             {provinces.length} / {provinces.length}
                         </div>
 
                         <button
-                            className="primary-button"
+                            className={styles.restartButton}
                             type="button"
                             onClick={handleRestart}
                         >
@@ -227,13 +247,23 @@ export default function Home() {
                         phase={phase}
                         onCorrectNameAction={handleCorrectName}
                         onMapHintAction={() => {
-                            setMapHintLevel((current) => Math.min(current + 1, 2));
+                            setMapHintLevel((current) =>
+                                Math.min(current + 1, 2)
+                            );
                         }}
                         mapHintLevel={mapHintLevel}
                         neighbors={currentProvince.neighbors}
                     />
                 )}
             </section>
+
+            <GameSidebar
+                completedProvinces={completedProvinces}
+                isOpen={isDrawerOpen}
+                onClose={() => setIsDrawerOpen(false)}
+                onReset={handleRestart}
+                onProvinceHover={setHoveredProvince}
+            />
         </main>
     );
 }

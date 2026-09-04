@@ -9,6 +9,7 @@ type TurkeyMapProps = {
     highlightedProvinces?: string[];
     completedProvinces?: string[];
     lastCompletedProvince: string | null;
+    hoveredProvince: string | null;
 };
 
 export default function TurkeyMap({
@@ -17,6 +18,7 @@ export default function TurkeyMap({
                                       highlightedProvinces,
                                       completedProvinces,
                                       lastCompletedProvince,
+                                      hoveredProvince,
                                   }: TurkeyMapProps) {
     function handleClick(event: MouseEvent<SVGSVGElement>) {
         const target = event.target as SVGElement;
@@ -42,5 +44,6 @@ export default function TurkeyMap({
         highlightedProvinces={highlightedProvinces}
         completedProvinces={completedProvinces}
         lastCompletedProvince={lastCompletedProvince}
+        hoveredProvince={hoveredProvince}
     />;
 }
