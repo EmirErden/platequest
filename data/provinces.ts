@@ -12,6 +12,7 @@ export type Province = {
     name: string;
     region: Region;
     neighbors: string[];
+    mapLabel?: string;
 };
 
 export const provinces: Province[] = [
@@ -31,7 +32,8 @@ export const provinces: Province[] = [
         plate: 3,
         name: "Afyonkarahisar",
         region: "Ege",
-        neighbors: ["Uşak", "Denizli", "Burdur", "Isparta", "Konya", "Eskişehir", "Kütahya"]
+        neighbors: ["Uşak", "Denizli", "Burdur", "Isparta", "Konya", "Eskişehir", "Kütahya"],
+        mapLabel: "Afyon",
     },
     {
         plate: 4, name: "Ağrı", region: "Doğu Anadolu", neighbors: ["Erzurum", "Kars", "Iğdır", "Van", "Bitlis", "Muş"]
@@ -130,7 +132,13 @@ export const provinces: Province[] = [
         neighbors: ["Hatay", "Osmaniye", "Kahramanmaraş", "Adıyaman", "Şanlıurfa", "Kilis"]
     },
     {plate: 28, name: "Giresun", region: "Karadeniz", neighbors: ["Ordu", "Sivas", "Erzincan", "Gümüşhane", "Trabzon"]},
-    {plate: 29, name: "Gümüşhane", region: "Karadeniz", neighbors: ["Giresun", "Trabzon", "Bayburt", "Erzincan"]},
+    {
+        plate: 29,
+        name: "Gümüşhane",
+        region: "Karadeniz",
+        neighbors: ["Giresun", "Trabzon", "Bayburt", "Erzincan"],
+        mapLabel: "G.hane"
+    },
     {plate: 30, name: "Hakkari", region: "Doğu Anadolu", neighbors: ["Van", "Şırnak"]},
     {plate: 31, name: "Hatay", region: "Akdeniz", neighbors: ["Adana", "Osmaniye", "Gaziantep", "Kilis"]},
     {plate: 32, name: "Isparta", region: "Akdeniz", neighbors: ["Burdur", "Afyonkarahisar", "Konya", "Antalya"]},
@@ -181,7 +189,8 @@ export const provinces: Province[] = [
         plate: 46,
         name: "Kahramanmaraş",
         region: "Akdeniz",
-        neighbors: ["Adana", "Osmaniye", "Gaziantep", "Adıyaman", "Malatya", "Sivas", "Kayseri"]
+        neighbors: ["Adana", "Osmaniye", "Gaziantep", "Adıyaman", "Malatya", "Sivas", "Kayseri"],
+        mapLabel: "K.Maraş"
     },
     {
         plate: 47,

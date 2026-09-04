@@ -8,6 +8,7 @@ type TurkeyMapProps = {
     wrongProvince?: string | null;
     highlightedProvinces?: string[];
     completedProvinces?: string[];
+    lastCompletedProvince: string | null;
 };
 
 export default function TurkeyMap({
@@ -15,6 +16,7 @@ export default function TurkeyMap({
                                       wrongProvince,
                                       highlightedProvinces,
                                       completedProvinces,
+                                      lastCompletedProvince,
                                   }: TurkeyMapProps) {
     function handleClick(event: MouseEvent<SVGSVGElement>) {
         const target = event.target as SVGElement;
@@ -39,5 +41,6 @@ export default function TurkeyMap({
         wrongProvince={wrongProvince}
         highlightedProvinces={highlightedProvinces}
         completedProvinces={completedProvinces}
+        lastCompletedProvince={lastCompletedProvince}
     />;
 }
