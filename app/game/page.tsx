@@ -9,6 +9,24 @@ import confetti from "canvas-confetti";
 import styles from "@/app/game/page.module.css";
 import {initialProgress, resetProgress, updateProgress, useGameProgress} from "@/lib/game-progress";
 
+function getCelebrationMessage(completedProvinces: string[], hintFreeStreak: number, provinceName: string) {
+    const completedCount = completedProvinces.length;
+    const completedRegion = provinces.find((province) => province.name === provinceName)?.region;
+
+    if (completedCount === provinces.length) return "✦ Türkiye turu tamamlandı!";
+    if (completedRegion && provinces.filter((province) => province.region === completedRegion).every((province) => completedProvinces.includes(province.name))) {
+        return `✦ ${completedRegion} turu tamamlandı!`;
+    }
+    if (hintFreeStreak === 10) return "✦ Hafızadan haritaya: 10 il ipucusuz!";
+    if (hintFreeStreak === 5) return "✦ Kusursuz beşli: 5 il ipucusuz!";
+    if (hintFreeStreak === 3) return "✦ İz sürücü: 3 il ipucusuz!";
+    if (completedCount === 71) return "✦ Son düzlük: Son 10 il kaldı!";
+    if (completedCount === 41) return "✦ Yarı yol: Türkiye'nin yarısı tamam!";
+    if (completedCount === 10) return "✦ Plaka avcısı: İlk 10 il tamam!";
+    if (completedCount === 3) return "✦ Isınma turu tamamlandı!";
+    return null;
+}
+
 export default function Home() {
     const progress = useGameProgress();
     const {currentIndex, phase, completedProvinces, isGameComplete} = progress ?? initialProgress();
@@ -67,6 +85,10 @@ export default function Home() {
         updateProgress(current => current.isGameComplete ? current : {...current, phase: "map"});
     }
 
+    function markHintUsed() {
+        updateProgress(current => current.usedHintForCurrentProvince ? current : {...current, usedHintForCurrentProvince: true});
+    }
+
     function handleProvinceClick(provinceName: string) {
         if (!progress || isGameComplete || phase !== "map" || completedProvinces.includes(provinceName)) {
             return;
@@ -82,23 +104,31 @@ export default function Home() {
             return;
         }
 
-        updateProgress(current => {
+        const updatedProgress = updateProgress(current => {
             if (current.isGameComplete || current.phase !== "map" ||
                 provinces[current.currentIndex].name !== provinceName ||
                 current.completedProvinces.includes(provinceName)) return current;
             const nextIndex = current.currentIndex + 1;
+            const updatedCompletedProvinces = [...current.completedProvinces, provinceName];
+            const nextStreak = current.usedHintForCurrentProvince ? 0 : current.hintFreeStreak + 1;
             return {
                 ...current,
-                completedProvinces: [...current.completedProvinces, provinceName],
+                completedProvinces: updatedCompletedProvinces,
                 currentIndex: Math.min(nextIndex, provinces.length - 1),
                 phase: "name",
                 isGameComplete: nextIndex >= provinces.length,
+                hintFreeStreak: nextStreak,
+                usedHintForCurrentProvince: false,
             };
         });
 
         setLastCompletedProvince(provinceName);
 
-        setSuccessMessage(`${currentProvince.name} tamamlandı!`);
+        setSuccessMessage(getCelebrationMessage(
+            updatedProgress.completedProvinces,
+            updatedProgress.hintFreeStreak,
+            currentProvince.name,
+        ) ?? `${currentProvince.name} tamamlandı!`);
         setIsToastLeaving(false);
 
         setTimeout(() => {
@@ -108,7 +138,7 @@ export default function Home() {
                 setSuccessMessage("");
                 setIsToastLeaving(false);
             }, 300);
-        }, 2000);
+        }, 4000);
 
         setMapHintLevel(0);
     }
@@ -204,11 +234,14 @@ export default function Home() {
                         phase={phase}
                         onCorrectNameAction={handleCorrectName}
                         onMapHintAction={() => {
+                            markHintUsed();
                             setMapHintLevel((current) =>
                                 Math.min(current + 1, 2)
                             );
                         }}
+                        onNameHintAction={markHintUsed}
                         mapHintLevel={mapHintLevel}
+                        region={currentProvince.region}
                         neighbors={currentProvince.neighbors}
                     />
                 )}

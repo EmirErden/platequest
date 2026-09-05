@@ -151,9 +151,26 @@
 }
 
 .footer {
+    display: grid;
+    gap: 10px;
     padding-top: 18px;
 
     border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.homeLink {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    color: #cbd5e1;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.homeLink:hover {
+    color: #f8fafc;
 }
 
 .resetButton {
@@ -173,56 +190,6 @@
 
 .resetButton:hover {
     background: rgba(251, 113, 133, 0.14);
-}
-
-/* Progress Card */
-
-.progressCard {
-    margin-top: 18px;
-    padding: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.04);
-}
-
-.progressInfo {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12px;
-}
-
-.progressInfo span {
-    color: #aeb8ca;
-    font-size: 13px;
-    font-weight: 600;
-}
-
-.progressInfo strong {
-    color: #f5f7fb;
-    font-size: 14px;
-}
-
-.progressTrack {
-    width: 100%;
-    height: 7px;
-    overflow: hidden;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.08);
-}
-
-.progressBar {
-    height: 100%;
-    border-radius: inherit;
-    background: #f2b84b;
-    transition: width 300ms ease;
-}
-
-.progressPercentage {
-    display: block;
-    margin-top: 9px;
-    color: #7f8ba0;
-    font-size: 14px;
 }
 
 @media (max-width: 650px) {

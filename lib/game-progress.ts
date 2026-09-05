@@ -9,6 +9,8 @@ export type GameProgress = {
     phase: "name" | "map";
     completedProvinces: string[];
     isGameComplete: boolean;
+    hintFreeStreak: number;
+    usedHintForCurrentProvince: boolean;
 };
 
 const storageKey = "platequest-progress";
@@ -16,7 +18,7 @@ const listeners = new Set<() => void>();
 let snapshot: GameProgress | undefined;
 
 export function initialProgress(): GameProgress {
-    return {version: 1, currentIndex: 0, phase: "name", completedProvinces: [], isGameComplete: false};
+    return {version: 1, currentIndex: 0, phase: "name", completedProvinces: [], isGameComplete: false, hintFreeStreak: 0, usedHintForCurrentProvince: false};
 }
 
 export function parseProgress(raw: string | null): GameProgress {
@@ -45,6 +47,8 @@ export function parseProgress(raw: string | null): GameProgress {
             phase: value.phase ?? "name",
             completedProvinces: value.completedProvinces,
             isGameComplete: value.isGameComplete,
+            hintFreeStreak: Number.isInteger(value.hintFreeStreak) && value.hintFreeStreak >= 0 ? value.hintFreeStreak : 0,
+            usedHintForCurrentProvince: value.usedHintForCurrentProvince === true,
         };
     } catch {
         return initialProgress();
@@ -90,6 +94,7 @@ export function updateProgress(update: (current: GameProgress) => GameProgress) 
         // Keep playing with the in-memory snapshot if browser storage is unavailable.
     }
     listeners.forEach(notify => notify());
+    return snapshot;
 }
 
 export function resetProgress() {

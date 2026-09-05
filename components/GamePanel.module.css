@@ -89,7 +89,7 @@
 }
 
 .errorMessage {
-    min-height: 14px;
+    min-height: 18px;
     margin-top: 3px;
 
     color: #fb7185;
@@ -153,6 +153,8 @@
     margin-top: 10px;
 
     display: flex;
+    flex-direction: column;
+    gap: 4px;
     align-items: center;
     justify-content: center;
 }

@@ -1,6 +1,7 @@
 import {provinces} from "@/data/provinces";
 import styles from "./GameSidebar.module.css";
 import {useState} from "react";
+import Link from "next/link";
 import ResetGameDialog from "@/components/ResetGameDialog";
 
 type GameSidebarProps = {
@@ -45,30 +46,6 @@ export default function GameSidebar({
                     </button>
                 </div>
 
-                <div className={styles.progressCard}>
-                    <div className={styles.progressInfo}>
-                        <span>Genel İlerleme</span>
-                        <strong>
-                            {completedProvinces.length} / {provinces.length}
-                        </strong>
-                    </div>
-
-                    <div className={styles.progressTrack}>
-                        <div
-                            className={styles.progressBar}
-                            style={{
-                                width: `${(completedProvinces.length / provinces.length) * 100}%`,
-                            }}
-                        />
-                    </div>
-
-                    <span className={styles.progressPercentage}>
-                        %{Math.round(
-                        (completedProvinces.length / provinces.length) * 100
-                    )} tamamlandı
-                    </span>
-                </div>
-
                 <div className={styles.content}>
                     <h3>Tamamlanan İller</h3>
 
@@ -101,6 +78,10 @@ export default function GameSidebar({
                 </div>
 
                 <div className={styles.footer}>
+                    <Link href="/" className={styles.homeLink} onClick={onClose}>
+                        ← Ana sayfaya dön
+                    </Link>
+
                     <button
                         type="button"
                         className={styles.resetButton}

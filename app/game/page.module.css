@@ -140,7 +140,7 @@
 }
 
 .successToastLeaving {
-    animation: toastOut 300ms ease-in forwards;
+    animation: toastOut 420ms ease-in forwards;
 }
 
 /* Game completion */
@@ -149,7 +149,7 @@
     width: min(400px, 100%);
     box-sizing: border-box;
 
-    padding: 36px 28px;
+    padding: 24px 28px 20px;
 
     text-align: center;
 
@@ -197,7 +197,9 @@
 .completionIcon {
     width: 58px;
     height: 58px;
-    margin: 0 auto 18px;
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 12px;
 
     display: flex;
     align-items: center;
@@ -208,7 +210,7 @@
     background: rgba(56, 161, 105, 0.16);
     color: #6ee7a0;
 
-    font-size: 30px;
+    font-size: 25px;
     font-weight: 800;
 }
 
@@ -219,14 +221,14 @@
 
 .completionText {
     max-width: 360px;
-    margin: 12px auto 22px;
+    margin: 8px auto 14px;
 
     color: #aeb8ca;
     line-height: 1.6;
 }
 
 .completionProgress {
-    margin-bottom: 24px;
+    margin-bottom: 16px;
 
     color: #6ee7a0;
     font-size: 22px;
@@ -260,6 +262,17 @@
 }
 
 @media (max-width: 650px) {
+    .successToast {
+        top: 12px;
+        width: calc(100vw - 32px);
+        max-width: 420px;
+        box-sizing: border-box;
+        justify-content: center;
+        padding: 10px 12px;
+        font-size: 14px;
+        text-align: center;
+    }
+
     .gamePage {
         width: min(100% - 24px, 1200px);
         padding-top: 20px;

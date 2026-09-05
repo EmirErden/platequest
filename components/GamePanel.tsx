@@ -10,7 +10,9 @@ type GamePanelProps = {
     provinceName: string;
     onCorrectNameAction: () => void;
     onMapHintAction: () => void;
+    onNameHintAction: () => void;
     mapHintLevel: number;
+    region: string;
     neighbors: string[];
 };
 
@@ -20,7 +22,9 @@ export default function GamePanel({
                                       provinceName,
                                       onCorrectNameAction,
                                       onMapHintAction,
+                                      onNameHintAction,
                                       mapHintLevel,
+                                      region,
                                       neighbors,
                                   }: GamePanelProps) {
     const inputRef = useRef<HTMLInputElement>(null);
@@ -84,15 +88,20 @@ export default function GamePanel({
                     {provinceName} ilini haritada bul.
                 </p>
 
-                <button
-                    className={styles.secondaryButton}
-                    type="button"
-                    onClick={onMapHintAction}
-                >
-                    İpucu
-                </button>
+                {mapHintLevel < 2 && (
+                    <button
+                        className={styles.secondaryButton}
+                        type="button"
+                        onClick={onMapHintAction}
+                    >
+                        {mapHintLevel === 0 ? "Bölgeyi göster" : "Komşuları göster"}
+                    </button>
+                )}
 
                 <div className={styles.panelFeedback}>
+                    {mapHintLevel >= 1 && (
+                        <p className={styles.hintText}>Bölge: {region}</p>
+                    )}
                     {mapHintLevel >= 2 && (
                         <p className={styles.hintText}>
                             Komşu iller: {neighbors.join(", ")}
@@ -151,20 +160,20 @@ export default function GamePanel({
                         Cevapla
                     </button>
 
-                    <button
-                        className={styles.secondaryButton}
-                        type="button"
-                        onClick={() => {
-                            setHintCount((current) =>
-                                Math.min(
-                                    current + 1,
-                                    provinceName.length,
-                                )
-                            );
-                        }}
-                    >
-                        İpucu
-                    </button>
+                    {hintCount < provinceName.length && (
+                        <button
+                            className={styles.secondaryButton}
+                            type="button"
+                            onClick={() => {
+                                onNameHintAction();
+                                setHintCount((current) =>
+                                    Math.min(current + 1, provinceName.length)
+                                );
+                            }}
+                        >
+                            Bir harf aç
+                        </button>
+                    )}
                 </div>
             </form>
 
