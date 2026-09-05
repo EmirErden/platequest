@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Plaka Peşinde
 
-## Getting Started
+Türkiye'nin 81 ilini plaka kodları ve haritadaki konumlarıyla öğrenmek için hazırlanmış küçük bir web oyunu.
 
-First, run the development server:
+Her tur iki aşamadan oluşur: önce plakanın hangi ile ait olduğunu bulursun, ardından o ili Türkiye haritasında işaretlersin.
+
+## Özellikler
+
+- 81 il için plaka, bölge ve komşu il verileri
+- İsim bulma ve haritada konum gösterme olmak üzere iki aşamalı oyun akışı
+- Aşamalı ipuçları: harf açma, bölge vurgulama ve komşu illeri gösterme
+- Mobilde haritayı yakınlaştırma, sürükleme ve başlangıç görünümüne dönme
+- Tarayıcıda saklanan oyun ilerlemesi; sayfa yenilense de kaldığın yerden devam etme
+- İlk 10 il, bölge tamamlama ve ipucusuz seri gibi oyun içi kutlama bildirimleri
+- Tamamlanan illeri gösteren ilerleme menüsü
+- 81 il tamamlandığında konfetiyle bitiş ekranı
+
+## Teknolojiler
+
+- Next.js 16
+- React 19
+- TypeScript
+- CSS Modules
+- `canvas-confetti`
+
+## Yerelde çalıştırma
+
+Gereksinim: Node.js 20 veya daha güncel bir sürüm.
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Uygulama varsayılan olarak [http://localhost:3000](http://localhost:3000) adresinde açılır.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Komutlar
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# Geliştirme sunucusu
+npm run dev
 
-## Learn More
+# Kod kalitesi kontrolü
+npm run lint
 
-To learn more about Next.js, take a look at the following resources:
+# Üretim derlemesi
+npm run build
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Üretim sunucusunu çalıştırma
+npm run start
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## İlerleme kaydı
 
-## Deploy on Vercel
+Oyun ilerlemesi tarayıcının `localStorage` alanında `platequest-progress` anahtarıyla saklanır. Bu nedenle aynı tarayıcıda sayfa yenilendiğinde veya ana sayfaya dönüldüğünde oyun devam eder.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+“Baştan Başla” ya da “İlerlemeyi Sıfırla” seçeneği; tamamlanan illeri, ipucusuz seriyi ve mevcut oyun turunu temizler.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Yol haritası
+
+- Karışık plaka sıralaması ve kısa oyun turları
+- Yanlış veya ipucuyla bulunan iller için tekrar modu
+- İl → plaka ve haritada gösterilen il → isim gibi ek soru türleri
