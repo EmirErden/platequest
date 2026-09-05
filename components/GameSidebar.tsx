@@ -1,6 +1,7 @@
 import {provinces} from "@/data/provinces";
 import styles from "./GameSidebar.module.css";
 import {useState} from "react";
+import ResetGameDialog from "@/components/ResetGameDialog";
 
 type GameSidebarProps = {
     completedProvinces: string[];
@@ -110,37 +111,14 @@ export default function GameSidebar({
                 </div>
             </aside>
             {isResetDialogOpen && (
-                <div className={styles.dialogOverlay}>
-                    <div className={styles.dialog}>
-                        <div className={styles.dialogIcon}>!</div>
-                        <h2>İlerlemeyi sıfırla?</h2>
-                        <p>
-                            Tamamladığın tüm iller silinecek ve oyun baştan başlayacak.
-                        </p>
-
-                        <div className={styles.dialogActions}>
-                            <button
-                                type="button"
-                                className={styles.cancelButton}
-                                onClick={() => setIsResetDialogOpen(false)}
-                            >
-                                Vazgeç
-                            </button>
-
-                            <button
-                                type="button"
-                                className={styles.confirmResetButton}
-                                onClick={() => {
-                                    onReset();
-                                    setIsResetDialogOpen(false);
-                                    onClose();
-                                }}
-                            >
-                                Sıfırla
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <ResetGameDialog
+                    onCancel={() => setIsResetDialogOpen(false)}
+                    onConfirm={() => {
+                        onReset();
+                        setIsResetDialogOpen(false);
+                        onClose();
+                    }}
+                />
             )}
         </>
     );

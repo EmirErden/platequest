@@ -1,0 +1,111 @@
+.dialogOverlay {
+    position: fixed;
+    inset: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+
+    background: rgba(5, 8, 16, 0.72);
+    backdrop-filter: blur(4px);
+
+    z-index: 200;
+}
+
+.dialog {
+    width: min(360px, 100%);
+    box-sizing: border-box;
+
+    padding: 26px;
+
+    text-align: center;
+
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 18px;
+
+    background: #111827;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+}
+
+.dialogIcon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 48px;
+    height: 48px;
+
+    margin: 0 auto 16px;
+
+    border-radius: 50%;
+
+    background: rgba(251, 113, 133, 0.12);
+    color: #fb7185;
+
+    font-size: 24px;
+    font-weight: 800;
+}
+
+.dialog h2 {
+    margin: 0;
+
+    color: #f5f7fb;
+    font-size: 20px;
+}
+
+.dialog p {
+    margin: 10px 0 22px;
+
+    color: #9ca8bc;
+
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.dialogActions {
+    display: flex;
+    gap: 10px;
+}
+
+.cancelButton,
+.confirmResetButton {
+    flex: 1;
+
+    min-height: 40px;
+
+    border-radius: 9px;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition:
+            background 120ms ease,
+            transform 120ms ease;
+}
+
+.cancelButton {
+    border: 1px solid #465168;
+
+    background: #182135;
+    color: #e5eaf2;
+}
+
+.cancelButton:hover {
+    background: #222d44;
+    transform: translateY(-1px);
+}
+
+.confirmResetButton {
+    border: 1px solid rgba(251, 113, 133, 0.45);
+
+    background: #fb7185;
+    color: #1a0b0e;
+}
+
+.confirmResetButton:hover {
+    background: #fda4af;
+    transform: translateY(-1px);
+}
