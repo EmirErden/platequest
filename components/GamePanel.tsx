@@ -2,6 +2,7 @@
 
 import {useEffect, useRef, useState} from "react";
 import styles from "./GamePanel.module.css";
+import LicensePlate from "@/components/LicensePlate";
 
 type GamePanelProps = {
     plate: number;
@@ -47,7 +48,7 @@ export default function GamePanel({
 
     function handleSubmit() {
         if (
-            answer.toLocaleLowerCase("tr-TR") ===
+            answer.trim().toLocaleLowerCase("tr-TR") ===
             provinceName.toLocaleLowerCase("tr-TR")
         ) {
             setMessage("");
@@ -70,9 +71,12 @@ export default function GamePanel({
                 key={`${provinceName}-${phase}`}
                 className={`${styles.gamePanel} ${styles.gamePanelEnter}`}
             >
-                <div className={styles.plateBadge}>
-                    {formattedPlate}
+                <div className={styles.stepper} aria-label="Oyunun ikinci aşaması">
+                    <span className={styles.completedStep}>1. İl adını bul</span>
+                    <span className={styles.activeStep}>2. Haritada göster</span>
                 </div>
+
+                <LicensePlate value={formattedPlate} className={styles.plateBadge} />
 
                 <h2>{provinceName}</h2>
 
@@ -104,9 +108,12 @@ export default function GamePanel({
             key={`${provinceName}-${phase}`}
             className={`${styles.gamePanel} ${styles.gamePanelEnter}`}
         >
-            <div className={styles.plateBadge}>
-                {formattedPlate}
+            <div className={styles.stepper} aria-label="Oyunun birinci aşaması">
+                <span className={styles.activeStep}>1. İl adını bul</span>
+                <span>2. Haritada göster</span>
             </div>
+
+            <LicensePlate value={formattedPlate} className={styles.plateBadge} />
 
             <h2>Bu plaka hangi ile ait?</h2>
 

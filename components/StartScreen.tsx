@@ -1,50 +1,35 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import Image from "next/image";
+import { useState } from "react";
+import {resetProgress, useGameProgress} from "@/lib/game-progress";
 import { useRouter } from "next/navigation";
 
 import ResetGameDialog from "@/components/ResetGameDialog";
+import LicensePlate from "@/components/LicensePlate";
 
 import styles from "./StartScreen.module.css";
-
-type SavedProgress = {
-    currentIndex: number;
-    completedProvinces: string[];
-    isGameComplete: boolean;
-};
 
 export default function StartScreen() {
     const router = useRouter();
 
-    const [savedProgress, setSavedProgress] = useState<SavedProgress | null>(null);
-    const [hasLoaded, setHasLoaded] = useState(false);
+    const savedProgress = useGameProgress();
     const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
 
-    useEffect(() => {
-        const saved = localStorage.getItem("platequest-progress");
-
-        if (saved) {
-            setSavedProgress(JSON.parse(saved));
-        }
-
-        setHasLoaded(true);
-    }, []);
-
-    if (!hasLoaded) {
+    if (!savedProgress) {
         return null;
     }
 
     const hasActiveGame =
-        savedProgress !== null &&
-        savedProgress.completedProvinces.length > 0 &&
+        (savedProgress.completedProvinces.length > 0 || savedProgress.phase === "map") &&
         !savedProgress.isGameComplete;
 
     const completedCount = savedProgress?.completedProvinces.length ?? 0;
     const progressPercentage = (completedCount / 81) * 100;
 
     const handleRestart = () => {
-        localStorage.removeItem("platequest-progress");
+        resetProgress();
         setIsResetDialogOpen(false);
         router.push("/game");
     };
@@ -52,14 +37,17 @@ export default function StartScreen() {
     return (
         <main className={styles.page}>
             <section className={styles.card}>
-                <div className={styles.plateBadge}>TR • 81</div>
+                <div className={styles.mapPreview} aria-hidden="true">
+                    <Image src="/turkey-map.svg" alt="" width={1007} height={527} priority />
+                </div>
 
-                <h1 className={styles.title}>PlateQuest</h1>
+                <h1 className={styles.title}>Plaka Peşinde</h1>
 
                 <p className={styles.description}>
-                    Türkiye'nin 81 ilini plakalarından bul.
-                    Kaç tanesini tamamlayabileceksin?
+                    Plakayı çöz, ilini bul, haritada işaretle.
                 </p>
+
+                <LicensePlate value="34" className={styles.examplePlate} />
 
                 {hasActiveGame ? (
                     <>
@@ -98,12 +86,13 @@ export default function StartScreen() {
                     </>
                 ) : (
                     <div className={styles.actions}>
-                        <Link
-                            href="/game"
+                        <button
+                            type="button"
+                            onClick={handleRestart}
                             className={styles.primaryButton}
                         >
                             Yeni Oyuna Başla
-                        </Link>
+                        </button>
                     </div>
                 )}
             </section>

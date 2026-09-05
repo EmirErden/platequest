@@ -6,13 +6,12 @@ import {provinces} from "@/data/provinces";
 import TurkeyMap from "@/components/TurkeyMap";
 import GameSidebar from "@/components/GameSidebar";
 import confetti from "canvas-confetti";
-import styles from "@/app/page.module.css";
-
-type GamePhase = "name" | "map";
+import styles from "@/app/game/page.module.css";
+import {initialProgress, resetProgress, updateProgress, useGameProgress} from "@/lib/game-progress";
 
 export default function Home() {
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const [phase, setPhase] = useState<GamePhase>("name");
+    const progress = useGameProgress();
+    const {currentIndex, phase, completedProvinces, isGameComplete} = progress ?? initialProgress();
 
     // Drawer States
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -21,17 +20,11 @@ export default function Home() {
     // Map states
     const [wrongProvince, setWrongProvince] = useState<string | null>(null);
     const [mapHintLevel, setMapHintLevel] = useState(0);
-    const [completedProvinces, setCompletedProvinces] = useState<string[]>([]);
     const [lastCompletedProvince, setLastCompletedProvince] = useState<string | null>(null);
 
     // Success Message and Toast states
     const [successMessage, setSuccessMessage] = useState("");
     const [isToastLeaving, setIsToastLeaving] = useState(false);
-
-    // Game completion states
-    const [isGameComplete, setIsGameComplete] = useState(false);
-
-    const [hasLoadedProgress, setHasLoadedProgress] = useState(false);
 
     const currentProvince = provinces[currentIndex];
 
@@ -40,45 +33,6 @@ export default function Home() {
             .filter((province) => province.region === currentProvince.region)
             .map((province) => province.name)
         : [];
-
-    useEffect(() => {
-        const loadProgress = () => {
-            const savedProgress = localStorage.getItem("platequest-progress");
-
-            if (savedProgress) {
-                const parsedProgress = JSON.parse(savedProgress);
-
-                setCurrentIndex(parsedProgress.currentIndex);
-                setCompletedProvinces(parsedProgress.completedProvinces);
-                setIsGameComplete(parsedProgress.isGameComplete);
-            }
-
-            setHasLoadedProgress(true);
-        };
-
-        const timeoutId = setTimeout(loadProgress, 0);
-
-        return () => {
-            clearTimeout(timeoutId);
-        };
-    }, []);
-
-    useEffect(() => {
-        if (!hasLoadedProgress) {
-            return;
-        }
-
-        const progress = {
-            currentIndex,
-            completedProvinces,
-            isGameComplete
-        };
-
-        localStorage.setItem(
-            "platequest-progress",
-            JSON.stringify(progress),
-        );
-    }, [currentIndex, completedProvinces, isGameComplete, hasLoadedProgress]);
 
     useEffect(() => {
         if (!isGameComplete) {
@@ -110,11 +64,11 @@ export default function Home() {
     }, [isGameComplete]);
 
     function handleCorrectName() {
-        setPhase("map");
+        updateProgress(current => current.isGameComplete ? current : {...current, phase: "map"});
     }
 
     function handleProvinceClick(provinceName: string) {
-        if (phase !== "map") {
+        if (!progress || isGameComplete || phase !== "map" || completedProvinces.includes(provinceName)) {
             return;
         }
 
@@ -128,10 +82,19 @@ export default function Home() {
             return;
         }
 
-        setCompletedProvinces((current) => [
-            ...current,
-            currentProvince.name,
-        ]);
+        updateProgress(current => {
+            if (current.isGameComplete || current.phase !== "map" ||
+                provinces[current.currentIndex].name !== provinceName ||
+                current.completedProvinces.includes(provinceName)) return current;
+            const nextIndex = current.currentIndex + 1;
+            return {
+                ...current,
+                completedProvinces: [...current.completedProvinces, provinceName],
+                currentIndex: Math.min(nextIndex, provinces.length - 1),
+                phase: "name",
+                isGameComplete: nextIndex >= provinces.length,
+            };
+        });
 
         setLastCompletedProvince(provinceName);
 
@@ -147,30 +110,20 @@ export default function Home() {
             }, 300);
         }, 2000);
 
-        const nextIndex = currentIndex + 1;
-
-        if (nextIndex >= provinces.length) {
-            setIsGameComplete(true);
-            return;
-        }
-
-        setCurrentIndex(nextIndex);
-        setPhase("name");
         setMapHintLevel(0);
     }
 
     function handleRestart() {
-        localStorage.removeItem("platequest-progress");
-
-        setCurrentIndex(0);
-        setPhase("name");
-        setCompletedProvinces([]);
+        resetProgress();
+        setLastCompletedProvince(null);
+        setHoveredProvince(null);
         setMapHintLevel(0);
         setWrongProvince(null);
         setSuccessMessage("");
         setIsToastLeaving(false);
-        setIsGameComplete(false);
     }
+
+    if (!progress) return null;
 
     return (
         <main className={styles.gamePage}>
@@ -192,7 +145,10 @@ export default function Home() {
                 </div>
 
                 <div className={styles.headerActions}>
-                    <div className={styles.progress}>
+                    <div
+                        className={styles.progress}
+                        style={{"--progress": (completedProvinces.length / provinces.length) * 100} as React.CSSProperties}
+                    >
                         {completedProvinces.length} / {provinces.length}
                     </div>
 
@@ -206,18 +162,19 @@ export default function Home() {
                 </div>
             </header>
 
-            <section className={styles.mapSection}>
-                <TurkeyMap
-                    onProvinceClickAction={handleProvinceClick}
-                    wrongProvince={wrongProvince}
-                    highlightedProvinces={highlightedProvinces}
-                    completedProvinces={completedProvinces}
-                    lastCompletedProvince={lastCompletedProvince}
-                    hoveredProvince={hoveredProvince}
-                />
-            </section>
+            <div className={`${styles.gameContent} ${phase === "name" ? styles.namePhase : ""}`}>
+                <section className={styles.mapSection}>
+                    <TurkeyMap
+                        onProvinceClickAction={handleProvinceClick}
+                        wrongProvince={wrongProvince}
+                        highlightedProvinces={highlightedProvinces}
+                        completedProvinces={completedProvinces}
+                        lastCompletedProvince={lastCompletedProvince}
+                        hoveredProvince={hoveredProvince}
+                    />
+                </section>
 
-            <section className={styles.panelWrapper}>
+                <section className={styles.panelWrapper}>
                 {isGameComplete ? (
                     <section className={styles.completionPanel}>
                         <div className={styles.completionIcon}>✓</div>
@@ -255,7 +212,8 @@ export default function Home() {
                         neighbors={currentProvince.neighbors}
                     />
                 )}
-            </section>
+                </section>
+            </div>
 
             <GameSidebar
                 completedProvinces={completedProvinces}

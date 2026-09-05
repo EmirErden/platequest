@@ -177,7 +177,7 @@ export default function TurkeyMapSvg({
         <svg
             ref={svgRef}
             id="svg-turkiye-haritasi"
-            viewBox="0 0 1007.478 527.323"
+            viewBox="0 0 1007.478 465"
             onClick={onClickAction}
             width="100%"
             style={{

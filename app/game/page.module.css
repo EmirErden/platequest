@@ -31,17 +31,21 @@
 }
 
 .progress {
-    padding: 8px 15px;
-
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 999px;
-
-    background: rgba(255, 255, 255, 0.07);
-    color: #e2e8f0;
-
-    font-size: 14px;
-    font-weight: 600;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 5px 10px;
+    min-width: 148px;
+    padding: 9px 12px;
+    border: 1px solid rgba(251, 191, 36, 0.22);
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.65);
+    color: #f8fafc;
+    font-size: 13px;
+    font-weight: 700;
 }
+
+.progress::before { content: "İlerleme"; color: #94a3b8; font-size: 11px; }
+.progress::after { content: ""; grid-column: 1 / -1; height: 4px; border-radius: 999px; background: linear-gradient(90deg, #f59e0b calc(var(--progress, 0) * 1%), #29364c 0); }
 
 .drawerOpenButton {
     display: flex;
@@ -64,27 +68,26 @@
     background: rgba(255, 255, 255, 0.12);
 }
 
-.mapSection {
-    width: min(920px, 100%);
-    margin: 0 auto;
-    position: relative;
+.gameContent {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
 }
 
-.mapSection svg {
-    width: 100%;
-    height: auto;
-    max-height: 580px;
+.mapSection {
+    width: min(840px, 100%);
+    min-width: 0;
+    margin: 0 auto;
 }
 
 .panelWrapper {
     display: flex;
     flex-direction: column;
     align-items: center;
-
-    margin-top: -60px;
-
+    margin-top: -24px;
     position: relative;
-    z-index: 2;
+    z-index: 1;
 }
 
 /* Success toast */
@@ -264,13 +267,46 @@
 
     .gameHeader {
         align-items: flex-start;
+        gap: 8px;
+    }
+
+    .gameHeader h1 {
+        font-size: 24px;
+        letter-spacing: -1px;
+        white-space: nowrap;
     }
 
     .gameHeader p {
-        font-size: 14px;
+        font-size: 13px;
+    }
+
+    .gameContent {
+        grid-template-columns: 1fr;
+        gap: 18px;
+    }
+
+    .mapSection {
+        width: 100%;
     }
 
     .panelWrapper {
         margin-top: 0;
+    }
+
+    .progress {
+        min-width: 94px;
+        padding: 8px 9px;
+        gap: 4px 8px;
+        font-size: 12px;
+        white-space: nowrap;
+    }
+
+    .progress::before {
+        font-size: 10px;
+    }
+
+    .headerActions {
+        flex: 0 0 auto;
+        gap: 6px;
     }
 }
