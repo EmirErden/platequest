@@ -4,6 +4,66 @@
     padding: 12px 0 32px;
 }
 
+.loadingPanel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+
+    width: min(400px, 100%);
+    min-height: 88px;
+    box-sizing: border-box;
+    margin: 12vh auto 0;
+    padding: 18px 20px;
+
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    border-radius: 16px;
+
+    background: rgba(18, 25, 42, 0.88);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+    color: #d7b569;
+
+    font-size: 14px;
+    font-weight: 700;
+    text-align: center;
+}
+
+.loadingPanel[role="alert"] {
+    flex-direction: column;
+
+    border-color: rgba(251, 113, 133, 0.32);
+    color: #fecdd3;
+}
+
+.loadingPanelTitle {
+    color: #fb7185;
+    font-size: 16px;
+}
+
+.loadingIndicator {
+    width: 9px;
+    height: 9px;
+
+    border-radius: 50%;
+
+    background: #f59e0b;
+    box-shadow: 0 0 0 6px rgba(245, 158, 11, 0.12);
+}
+
+.errorMessage {
+    margin: 0 0 12px;
+    padding: 10px 13px;
+
+    border: 1px solid rgba(251, 113, 133, 0.3);
+    border-radius: 11px;
+
+    background: rgba(251, 113, 133, 0.08);
+    color: #fecdd3;
+
+    font-size: 13px;
+    font-weight: 600;
+}
+
 .gameHeader {
     display: flex;
     align-items: center;
