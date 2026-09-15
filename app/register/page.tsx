@@ -69,19 +69,31 @@ export default function RegisterPage() {
 
         const supabase = createClient();
 
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
             email,
             password,
             options: {
                 emailRedirectTo: `${window.location.origin}/auth/callback`,
                 data: {
-                    username,
+                    username: username.trim(),
                 },
             },
         });
 
         if (error) {
-            setError(error.message);
+            setError(
+                error.message === "Database error saving new user"
+                    ? "Bu kullanıcı adı zaten kullanılıyor. Lütfen başka bir kullanıcı adı seç."
+                    : error.message
+            );
+            setIsLoading(false);
+            return;
+        }
+
+        if (data.user?.identities?.length === 0) {
+            setError(
+                "Bu e-posta ile zaten bir hesap var. Giriş yapmayı deneyebilirsin."
+            );
             setIsLoading(false);
             return;
         }

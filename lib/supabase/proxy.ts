@@ -32,7 +32,24 @@ export async function updateSession(request: NextRequest) {
         }
     );
 
-    await supabase.auth.getClaims();
+    const { data } = await supabase.auth.getClaims();
+    const claims = data?.claims;
+
+    const isAuthPage =
+        request.nextUrl.pathname === "/login" ||
+        request.nextUrl.pathname === "/register";
+
+    if (claims?.sub && isAuthPage) {
+        const redirectResponse = NextResponse.redirect(
+            new URL("/", request.url)
+        );
+
+        response.cookies.getAll().forEach((cookie) => {
+            redirectResponse.cookies.set(cookie);
+        });
+
+        return redirectResponse;
+    }
 
     return response;
 }
