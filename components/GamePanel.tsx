@@ -34,17 +34,8 @@ export default function GamePanel({
     const [hintCount, setHintCount] = useState(0);
 
     const formattedPlate = plate.toString().padStart(2, "0");
-
-    const hintText = provinceName
-        .split("")
-        .map((letter, index) => {
-            if (letter === " ") {
-                return " ";
-            }
-
-            return index < hintCount ? letter : "_";
-        })
-        .join(" ");
+    const provinceCharacters = Array.from(provinceName);
+    const hintPrefix = provinceCharacters.slice(0, hintCount).join("");
 
     useEffect(() => {
         inputRef.current?.focus();
@@ -67,6 +58,25 @@ export default function GamePanel({
         setTimeout(() => {
             setMessage("");
         }, 2000);
+    }
+
+    function revealNextHint() {
+        const nextHintCount = Math.min(
+            hintCount + 1,
+            provinceCharacters.length
+        );
+        const nextHintPrefix = provinceCharacters
+            .slice(0, nextHintCount)
+            .join("");
+        onNameHintAction();
+        setAnswer((currentAnswer) => {
+            const suffixCharacters = Array.from(
+                currentAnswer.slice(hintPrefix.length)
+            );
+
+            return nextHintPrefix + suffixCharacters.slice(1).join("");
+        });
+        setHintCount(nextHintCount);
     }
 
     if (phase === "map") {
@@ -133,19 +143,30 @@ export default function GamePanel({
                 }}
             >
                 <div className={styles.inputWrapper}>
-                    <input
-                        ref={inputRef}
-                        lang="tr"
-                        className={`${styles.answerInput} ${
-                            message ? styles.answerInputError : ""
-                        }`}
-                        type="text"
-                        placeholder="İl Adını Yaz"
-                        value={answer}
-                        onChange={(event) => {
-                            setAnswer(event.target.value);
-                        }}
-                    />
+                    <div
+                        className={`${styles.answerField} ${hintPrefix ? styles.answerFieldWithHint : ""} ${message ? styles.answerInputError : ""}`}
+                    >
+                        {hintPrefix && (
+                            <span
+                                lang="tr"
+                                aria-hidden="true"
+                                className={styles.hintPrefix}
+                            >
+                                {hintPrefix}
+                            </span>
+                        )}
+                        <input
+                            ref={inputRef}
+                            lang="tr"
+                            className={styles.answerInput}
+                            type="text"
+                            placeholder={hintPrefix ? "" : "İl Adını Yaz"}
+                            value={answer.slice(hintPrefix.length)}
+                            onChange={(event) =>
+                                setAnswer(hintPrefix + event.target.value)
+                            }
+                        />
+                    </div>
 
                     <span className={styles.errorMessage}>
                         {message}
@@ -160,33 +181,17 @@ export default function GamePanel({
                         Cevapla
                     </button>
 
-                    {hintCount < provinceName.length && (
+                    {hintCount < provinceCharacters.length && (
                         <button
                             className={styles.secondaryButton}
                             type="button"
-                            onClick={() => {
-                                onNameHintAction();
-                                setHintCount((current) =>
-                                    Math.min(current + 1, provinceName.length)
-                                );
-                            }}
+                            onClick={revealNextHint}
                         >
                             Bir harf aç
                         </button>
                     )}
                 </div>
             </form>
-
-            <div className={styles.panelFeedback}>
-                {hintCount > 0 ? (
-                    <p
-                        lang="tr"
-                        className={styles.hintText}
-                    >
-                        {hintText}
-                    </p>
-                ) : null}
-            </div>
         </section>
     );
 }
