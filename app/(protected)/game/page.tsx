@@ -6,7 +6,7 @@ import confetti from "canvas-confetti";
 import GamePanel from "@/components/GamePanel";
 import TurkeyMap from "@/components/TurkeyMap";
 import GameSidebar from "@/components/GameSidebar";
-import LogoutButton from "@/components/LogoutButton";
+import ProfileMenu from "@/components/ProfileMenu";
 
 import { provinces } from "@/data/provinces";
 
@@ -386,7 +386,7 @@ export default function GamePage() {
                         {provinces.length}
                     </div>
 
-                    <LogoutButton />
+                    <ProfileMenu />
 
                     <button
                         className={styles.drawerOpenButton}

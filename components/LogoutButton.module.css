@@ -33,6 +33,27 @@
     outline-offset: 2px;
 }
 
+.errorNotification {
+    position: fixed;
+    z-index: 300;
+    top: 20px;
+    left: 50%;
+    margin: 0;
+    padding: 12px 16px;
+
+    border: 1px solid rgba(251, 113, 133, 0.38);
+    border-radius: 10px;
+
+    background: #3b1020;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+    color: #fecdd3;
+
+    font-size: 14px;
+    font-weight: 700;
+
+    transform: translateX(-50%);
+}
+
 .dialogOverlay {
     position: fixed;
     inset: 0;
@@ -87,7 +108,7 @@
 }
 
 .dialog p {
-    margin: 10px 0 22px;
+    margin: 10px 0 0;
     color: #9ca8bc;
     font-size: 14px;
     line-height: 1.5;
@@ -96,6 +117,7 @@
 .dialogActions {
     display: flex;
     gap: 10px;
+    margin-top: 24px;
 }
 
 .cancelButton,
@@ -123,6 +145,13 @@
 .cancelButton:hover,
 .confirmButton:hover {
     transform: translateY(-1px);
+}
+
+.cancelButton:disabled,
+.confirmButton:disabled {
+    cursor: wait;
+    opacity: 0.7;
+    transform: none;
 }
 
 .cancelButton:hover {

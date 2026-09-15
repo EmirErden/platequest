@@ -1,4 +1,5 @@
 .page {
+    position: relative;
     min-height: 100vh;
 
     display: flex;
@@ -8,6 +9,13 @@
     padding: 24px;
 
     background: radial-gradient(circle at top, rgba(245, 158, 11, 0.14), transparent 42%), #080f1f;
+}
+
+.profileMenuArea {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    z-index: 2;
 }
 
 .card {
@@ -295,6 +303,11 @@
 
     .title {
         font-size: 36px;
+    }
+
+    .profileMenuArea {
+        top: 16px;
+        right: 16px;
     }
 
     .userArea {

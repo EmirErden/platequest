@@ -12,7 +12,7 @@ import {
 } from "@/lib/turkey-plate-progress";
 
 import ResetGameDialog from "@/components/ResetGameDialog";
-import LogoutButton from "@/components/LogoutButton";
+import ProfileMenu from "@/components/ProfileMenu";
 
 import styles from "./StartScreen.module.css";
 
@@ -99,6 +99,12 @@ export default function StartScreen({
 
     return (
         <main className={styles.page}>
+            {isAuthenticated && (
+                <div className={styles.profileMenuArea}>
+                    <ProfileMenu username={username} />
+                </div>
+            )}
+
             <section className={styles.card}>
                 <div
                     className={styles.mapPreview}
@@ -150,8 +156,6 @@ export default function StartScreen({
                                         <strong>Hoş geldin, {username ?? "gezgin"}</strong>
                                     </p>
                                 </div>
-
-                                <LogoutButton />
                             </div>
 
                             {isProgressLoading ? (
