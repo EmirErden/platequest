@@ -3,6 +3,7 @@
 import { SubmitEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Toast from "@/components/toast/Toast";
 import { createClient } from "@/lib/supabase/client";
 import styles from "./page.module.css";
 
@@ -41,9 +42,10 @@ export default function LoginPage() {
 
     return (
         <main className={styles.page}>
+            <Toast message={error} onDismissAction={() => setError("")} />
             <section className={styles.card}>
                 <p className={styles.eyebrow}>Plaka Peşinde</p>
-                <h1 className={styles.title}>Tekrar hoş geldin</h1>
+                <h1 className={styles.title}>Tekrar Hoş Geldin</h1>
                 <p className={styles.description}>
                     Kaldığın yerden Türkiye&apos;yi keşfetmeye devam et.
                 </p>
@@ -57,7 +59,10 @@ export default function LoginPage() {
                             type="email"
                             autoComplete="email"
                             value={email}
-                            onChange={(event) => setEmail(event.target.value)}
+                            onChange={(event) => {
+                                setEmail(event.target.value);
+                                setError("");
+                            }}
                             required
                         />
                     </div>
@@ -70,16 +75,19 @@ export default function LoginPage() {
                             type="password"
                             autoComplete="current-password"
                             value={password}
-                            onChange={(event) => setPassword(event.target.value)}
+                            onChange={(event) => {
+                                setPassword(event.target.value);
+                                setError("");
+                            }}
                             required
                         />
                     </div>
 
-                    {error && (
-                        <p className={styles.errorMessage} role="alert">
-                            {error}
-                        </p>
-                    )}
+                    <div className={styles.forgotPassword}>
+                        <Link href="/forgot-password">
+                            Şifremi unuttum
+                        </Link>
+                    </div>
 
                     <button
                         className={styles.submitButton}

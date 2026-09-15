@@ -82,61 +82,24 @@
     box-shadow: 0 0 0 3px rgba(242, 184, 75, 0.14);
 }
 
-.field input.inputInvalid,
-.field input.inputInvalid:focus {
-    border-color: #fb7185;
-    box-shadow: 0 0 0 3px rgba(251, 113, 133, 0.14);
-}
-
-.requiredMessage {
-    margin: 0;
-    color: #fb7185;
-    font-size: 12px;
-    line-height: 1.35;
-}
-
-.passwordHintInvalid {
-    margin: 0;
-    color: #fb7185;
-    font-size: 12px;
-    line-height: 1.45;
-}
-
-.validationSlot {
-    min-height: 17px;
-}
-
-.errorMessage,
-.successMessage {
-    margin: 0;
-    padding: 10px 12px;
-    border-radius: 10px;
-    font-size: 13px;
-    line-height: 1.45;
-}
-
-.errorMessage {
-    border: 1px solid rgba(251, 113, 133, 0.3);
-    background: rgba(251, 113, 133, 0.08);
-    color: #fecdd3;
-}
-
-.successMessage {
-    border: 1px solid rgba(110, 231, 160, 0.3);
-    background: rgba(110, 231, 160, 0.08);
-    color: #bbf7d0;
-}
-
 .submitButton {
     min-height: 48px;
+
     border: 1px solid #f59e0b;
     border-radius: 11px;
+
     background: #f59e0b;
     color: #1c1302;
+
     font-size: 15px;
     font-weight: 700;
+
     cursor: pointer;
-    transition: background 140ms ease, border-color 140ms ease, transform 140ms ease;
+
+    transition:
+            background 140ms ease,
+            border-color 140ms ease,
+            transform 140ms ease;
 }
 
 .submitButton:hover:not(:disabled) {
@@ -146,12 +109,13 @@
 }
 
 .submitButton:disabled {
-    cursor: not-allowed;
-    opacity: 0.48;
+    cursor: wait;
+    opacity: 0.62;
 }
 
 .footerText {
     margin: 16px 0 0;
+
     color: #9ca8bc;
     font-size: 13px;
     text-align: center;
@@ -164,6 +128,47 @@
 }
 
 .footerText a:hover {
+    color: #fde68a;
+    text-decoration: underline;
+}
+
+/* Başarılı mail gönderimi */
+
+.success {
+    padding: 16px;
+
+    border: 1px solid rgba(251, 191, 36, 0.22);
+    border-radius: 12px;
+
+    background: rgba(251, 191, 36, 0.06);
+}
+
+.success h2 {
+    margin: 0 0 8px;
+
+    color: #f5f7fb;
+    font-size: 18px;
+}
+
+.success p {
+    margin: 0;
+
+    color: #9ca8bc;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.success a {
+    display: inline-block;
+    margin-top: 16px;
+
+    color: #fbbf24;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.success a:hover {
     color: #fde68a;
     text-decoration: underline;
 }

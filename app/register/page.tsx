@@ -2,6 +2,7 @@
 
 import { SubmitEvent, useState } from "react";
 import Link from "next/link";
+import Toast from "@/components/toast/Toast";
 import { createClient } from "@/lib/supabase/client";
 import styles from "./page.module.css";
 
@@ -104,9 +105,10 @@ export default function RegisterPage() {
 
     return (
         <main className={styles.page}>
+            <Toast message={error} onDismissAction={() => setError("")} />
             <section className={styles.card}>
                 <p className={styles.eyebrow}>Plaka Peşinde</p>
-                <h1 className={styles.title}>Hesabını oluştur</h1>
+                <h1 className={styles.title}>Hesabını Oluştur</h1>
                 <p className={styles.description}>
                     Hesabını oluştur, ilerlemeni güvenle kaydet.
                 </p>
@@ -124,7 +126,10 @@ export default function RegisterPage() {
                             type="text"
                             autoComplete="username"
                             value={username}
-                            onChange={(event) => setUsername(event.target.value)}
+                            onChange={(event) => {
+                                setUsername(event.target.value);
+                                setError("");
+                            }}
                             onBlur={() => markFieldAsTouched("username")}
                             aria-invalid={showUsernameError}
                             className={
@@ -135,11 +140,13 @@ export default function RegisterPage() {
                             required
                         />
 
-                        {showUsernameError && (
-                            <p className={styles.requiredMessage}>
-                                Kullanıcı adı girmek zorunludur.
-                            </p>
-                        )}
+                        <div className={styles.validationSlot} aria-live="polite">
+                            {showUsernameError && (
+                                <p className={styles.requiredMessage}>
+                                    Kullanıcı adı girmek zorunludur.
+                                </p>
+                            )}
+                        </div>
                     </div>
 
                     <div className={styles.field}>
@@ -150,7 +157,10 @@ export default function RegisterPage() {
                             type="email"
                             autoComplete="email"
                             value={email}
-                            onChange={(event) => setEmail(event.target.value)}
+                            onChange={(event) => {
+                                setEmail(event.target.value);
+                                setError("");
+                            }}
                             onBlur={() => markFieldAsTouched("email")}
                             aria-invalid={showEmailError}
                             className={
@@ -161,11 +171,13 @@ export default function RegisterPage() {
                             required
                         />
 
-                        {showEmailError && (
-                            <p className={styles.requiredMessage}>
-                                E-posta girmek zorunludur.
-                            </p>
-                        )}
+                        <div className={styles.validationSlot} aria-live="polite">
+                            {showEmailError && (
+                                <p className={styles.requiredMessage}>
+                                    E-posta girmek zorunludur.
+                                </p>
+                            )}
+                        </div>
                     </div>
 
                     <div className={styles.field}>
@@ -176,7 +188,10 @@ export default function RegisterPage() {
                             type="password"
                             autoComplete="new-password"
                             value={password}
-                            onChange={(event) => setPassword(event.target.value)}
+                            onChange={(event) => {
+                                setPassword(event.target.value);
+                                setError("");
+                            }}
                             onBlur={() => markFieldAsTouched("password")}
                             minLength={8}
                             aria-describedby={
@@ -197,27 +212,23 @@ export default function RegisterPage() {
                             required
                         />
 
-                        {hasPasswordRequirementsError && (
-                            <p
-                                id="password-requirements"
-                                className={styles.passwordHintInvalid}
-                            >
-                                En az 8 karakter, en az 1 harf ve 1 rakam içermeli.
-                            </p>
-                        )}
+                        <div className={styles.validationSlot} aria-live="polite">
+                            {hasPasswordRequirementsError && (
+                                <p
+                                    id="password-requirements"
+                                    className={styles.passwordHintInvalid}
+                                >
+                                    En az 8 karakter, 1 harf ve 1 rakam gerekli.
+                                </p>
+                            )}
 
-                        {showPasswordError && !password && (
-                            <p className={styles.requiredMessage}>
-                                Şifre girmek zorunludur.
-                            </p>
-                        )}
+                            {showPasswordError && !password && (
+                                <p className={styles.requiredMessage}>
+                                    Şifre girmek zorunludur.
+                                </p>
+                            )}
+                        </div>
                     </div>
-
-                    {error && (
-                        <p className={styles.errorMessage} role="alert">
-                            {error}
-                        </p>
-                    )}
 
                     {success && (
                         <p className={styles.successMessage} role="status">

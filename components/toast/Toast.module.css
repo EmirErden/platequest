@@ -1,0 +1,45 @@
+.toast {
+    position: fixed;
+    z-index: 20;
+    top: 20px;
+    left: 50%;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    width: min(420px, calc(100% - 32px));
+    box-sizing: border-box;
+    padding: 12px 14px;
+    transform: translateX(-50%);
+
+    border: 1px solid;
+    border-radius: 12px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.error {
+    border-color: rgba(251, 113, 133, 0.4);
+    background: #3a1520;
+    color: #fecdd3;
+}
+
+.warning {
+    border-color: rgba(251, 191, 36, 0.4);
+    background: #35270a;
+    color: #fef3c7;
+}
+
+.toast span {
+    flex: 1;
+}
+
+.closeButton {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+}
