@@ -87,7 +87,7 @@ export default function StartScreen({
             setSavedProgress(null);
             setIsResetDialogOpen(false);
 
-            router.push("/game");
+            router.push("/game/plate-order");
         } catch (error) {
             console.error("Progress sıfırlanamadı:", error);
 
@@ -190,7 +190,7 @@ export default function StartScreen({
 
                                     <div className={styles.actions}>
                                         <Link
-                                            href="/game"
+                                            href="/game/plate-order"
                                             className={styles.primaryButton}
                                         >
                                             Devam Et
