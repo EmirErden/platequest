@@ -92,7 +92,10 @@ export default function GamePage() {
     // Map
     const [wrongProvince, setWrongProvince] =
         useState<string | null>(null);
-    const [mapHintLevel, setMapHintLevel] = useState(0);
+    const [mapHint, setMapHint] = useState<{
+        provinceIndex: number;
+        level: number;
+    } | null>(null);
     const [lastCompletedProvince, setLastCompletedProvince] =
         useState<string | null>(null);
 
@@ -132,6 +135,11 @@ export default function GamePage() {
     } = currentProgress;
 
     const currentProvince = provinces[currentIndex];
+
+    const mapHintLevel =
+        mapHint?.provinceIndex === currentIndex
+            ? mapHint.level
+            : 0;
 
     const highlightedProvinces =
         mapHintLevel >= 1
@@ -252,6 +260,9 @@ export default function GamePage() {
             usedHintForCurrentProvince: false,
         };
 
+        // Hint belongs to the completed province, never the next one.
+        setMapHint(null);
+
         // Önce UI'ı anında güncelle
         setProgress(updatedProgress);
 
@@ -287,7 +298,6 @@ export default function GamePage() {
             }, 300);
         }, 4000);
 
-        setMapHintLevel(0);
     }
 
     async function handleRestart() {
@@ -300,7 +310,7 @@ export default function GamePage() {
 
             setLastCompletedProvince(null);
             setHoveredProvince(null);
-            setMapHintLevel(0);
+            setMapHint(null);
             setWrongProvince(null);
             setSuccessMessage("");
             setIsToastLeaving(false);
@@ -480,13 +490,16 @@ export default function GamePage() {
                             onMapHintAction={() => {
                                 markHintUsed();
 
-                                setMapHintLevel(
-                                    (current) =>
-                                        Math.min(
-                                            current + 1,
-                                            2
-                                        )
-                                );
+                                setMapHint((currentHint) => ({
+                                    provinceIndex: currentIndex,
+                                    level: Math.min(
+                                        (currentHint?.provinceIndex ===
+                                        currentIndex
+                                            ? currentHint.level
+                                            : 0) + 1,
+                                        2
+                                    ),
+                                }));
                             }}
                             onNameHintAction={markHintUsed}
                             mapHintLevel={mapHintLevel}
