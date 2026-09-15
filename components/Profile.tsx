@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { SubmitEvent, useState } from "react";
 
 import ProfileMenu from "@/components/ProfileMenu";
 import { createClient } from "@/lib/supabase/client";
@@ -18,8 +18,11 @@ export default function Profile({ email, username }: ProfileProps) {
     const [isSaving, setIsSaving] = useState(false);
     const isPasswordValid = password.length >= 8 && /[A-Za-z]/.test(password) && /\d/.test(password);
 
-    const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (
+        event: SubmitEvent<HTMLFormElement>
+    )=> {
         event.preventDefault();
+
         setError("");
         setMessage("");
 
@@ -34,10 +37,12 @@ export default function Profile({ email, username }: ProfileProps) {
         }
 
         setIsSaving(true);
+
         const { error: updateError } = await createClient().auth.updateUser({
             password,
             current_password: currentPassword,
         });
+
         setIsSaving(false);
 
         if (updateError) {

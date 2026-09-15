@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import confetti from "canvas-confetti";
 
 import GamePanel from "@/components/GamePanel";

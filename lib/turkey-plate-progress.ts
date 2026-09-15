@@ -3,9 +3,6 @@
 import { provinces } from "@/data/provinces";
 import { createClient } from "@/lib/supabase/client";
 
-export type GameMode =
-    | "turkey_plate";
-
 export type TurkeyPlateProgress = {
     version: 1;
     currentIndex: number;
