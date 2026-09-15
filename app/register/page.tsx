@@ -13,11 +13,43 @@ export default function RegisterPage() {
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [hasSubmitted, setHasSubmitted] = useState(false);
+    const [touchedFields, setTouchedFields] = useState({
+        username: false,
+        email: false,
+        password: false,
+    });
 
     const isPasswordValid =
         password.length >= 8 &&
         /[A-Za-z]/.test(password) &&
         /\d/.test(password);
+
+    const isUsernameValid = username.trim().length > 0;
+    const isEmailValid = email.trim().length > 0;
+    const isFormValid =
+        isUsernameValid && isEmailValid && isPasswordValid;
+
+    const showUsernameError =
+        (hasSubmitted || touchedFields.username) &&
+        !isUsernameValid;
+    const showEmailError =
+        (hasSubmitted || touchedFields.email) &&
+        !isEmailValid;
+    const showPasswordError =
+        (hasSubmitted || touchedFields.password) &&
+        !isPasswordValid;
+    const hasPasswordRequirementsError =
+        password.length > 0 && !isPasswordValid;
+
+    const markFieldAsTouched = (
+        field: keyof typeof touchedFields
+    ) => {
+        setTouchedFields((current) => ({
+            ...current,
+            [field]: true,
+        }));
+    };
 
     const handleSubmit = async (
         event: SubmitEvent<HTMLFormElement>
@@ -26,6 +58,13 @@ export default function RegisterPage() {
 
         setError("");
         setSuccess("");
+
+        setHasSubmitted(true);
+
+        if (!isFormValid) {
+            return;
+        }
+
         setIsLoading(true);
 
         const supabase = createClient();
@@ -55,12 +94,16 @@ export default function RegisterPage() {
         <main className={styles.page}>
             <section className={styles.card}>
                 <p className={styles.eyebrow}>Plaka Peşinde</p>
-                <h1 className={styles.title}>Yeni bir rota aç</h1>
+                <h1 className={styles.title}>Hesabını oluştur</h1>
                 <p className={styles.description}>
                     Hesabını oluştur, ilerlemeni güvenle kaydet.
                 </p>
 
-                <form className={styles.form} onSubmit={handleSubmit}>
+                <form
+                    className={styles.form}
+                    noValidate
+                    onSubmit={handleSubmit}
+                >
                     <div className={styles.field}>
                         <label htmlFor="username">Kullanıcı adı</label>
 
@@ -70,8 +113,21 @@ export default function RegisterPage() {
                             autoComplete="username"
                             value={username}
                             onChange={(event) => setUsername(event.target.value)}
+                            onBlur={() => markFieldAsTouched("username")}
+                            aria-invalid={showUsernameError}
+                            className={
+                                showUsernameError
+                                    ? styles.inputInvalid
+                                    : ""
+                            }
                             required
                         />
+
+                        {showUsernameError && (
+                            <p className={styles.requiredMessage}>
+                                Kullanıcı adı girmek zorunludur.
+                            </p>
+                        )}
                     </div>
 
                     <div className={styles.field}>
@@ -83,8 +139,21 @@ export default function RegisterPage() {
                             autoComplete="email"
                             value={email}
                             onChange={(event) => setEmail(event.target.value)}
+                            onBlur={() => markFieldAsTouched("email")}
+                            aria-invalid={showEmailError}
+                            className={
+                                showEmailError
+                                    ? styles.inputInvalid
+                                    : ""
+                            }
                             required
                         />
+
+                        {showEmailError && (
+                            <p className={styles.requiredMessage}>
+                                E-posta girmek zorunludur.
+                            </p>
+                        )}
                     </div>
 
                     <div className={styles.field}>
@@ -96,21 +165,40 @@ export default function RegisterPage() {
                             autoComplete="new-password"
                             value={password}
                             onChange={(event) => setPassword(event.target.value)}
+                            onBlur={() => markFieldAsTouched("password")}
                             minLength={8}
-                            aria-describedby="password-requirements"
+                            aria-describedby={
+                                hasPasswordRequirementsError
+                                    ? "password-requirements"
+                                    : undefined
+                            }
+                            aria-invalid={
+                                showPasswordError ||
+                                hasPasswordRequirementsError
+                            }
+                            className={
+                                showPasswordError ||
+                                hasPasswordRequirementsError
+                                    ? styles.inputInvalid
+                                    : ""
+                            }
                             required
                         />
 
-                        <p
-                            id="password-requirements"
-                            className={`${styles.passwordHint} ${
-                                password && !isPasswordValid
-                                    ? styles.passwordHintInvalid
-                                    : ""
-                            }`}
-                        >
-                            En az 8 karakter, en az 1 harf ve 1 rakam içermeli.
-                        </p>
+                        {hasPasswordRequirementsError && (
+                            <p
+                                id="password-requirements"
+                                className={styles.passwordHintInvalid}
+                            >
+                                En az 8 karakter, en az 1 harf ve 1 rakam içermeli.
+                            </p>
+                        )}
+
+                        {showPasswordError && !password && (
+                            <p className={styles.requiredMessage}>
+                                Şifre girmek zorunludur.
+                            </p>
+                        )}
                     </div>
 
                     {error && (
@@ -128,7 +216,7 @@ export default function RegisterPage() {
                     <button
                         className={styles.submitButton}
                         type="submit"
-                        disabled={isLoading || !isPasswordValid}
+                        disabled={isLoading}
                     >
                         {isLoading ? "Kaydediliyor..." : "Kayıt Ol"}
                     </button>

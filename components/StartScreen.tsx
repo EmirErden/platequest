@@ -12,7 +12,6 @@ import {
 } from "@/lib/turkey-plate-progress";
 
 import ResetGameDialog from "@/components/ResetGameDialog";
-import LicensePlate from "@/components/LicensePlate";
 import LogoutButton from "@/components/LogoutButton";
 
 import styles from "./StartScreen.module.css";
@@ -122,98 +121,100 @@ export default function StartScreen({
                     Plakayı çöz, ilini bul, haritada işaretle.
                 </p>
 
-                <LicensePlate
-                    value="34"
-                    className={styles.examplePlate}
-                />
-
                 {!isAuthenticated ? (
-                    <div className={styles.actions}>
-                        <Link
-                            href="/login"
-                            className={styles.primaryButton}
-                        >
-                            Giriş Yap
-                        </Link>
+                        <div className={styles.actions}>
+                            <Link
+                                href="/login"
+                                className={styles.primaryButton}
+                            >
+                                Giriş Yap
+                            </Link>
 
-                        <Link
-                            href="/register"
-                            className={styles.restartButton}
-                        >
-                            Kayıt Ol
-                        </Link>
-                    </div>
-                ) : (
-                    <>
-                        <div className={styles.userArea}>
-                            <p className={styles.welcomeMessage}>
-                                Hoş geldin, <strong>{username ?? "gezgin"}</strong>
-                            </p>
-
-                            <LogoutButton />
+                            <Link
+                                href="/register"
+                                className={styles.secondaryButton}
+                            >
+                                Kayıt Ol
+                            </Link>
                         </div>
+                    ) : (
+                        <>
+                            <div className={styles.userArea}>
+                                <div className={styles.userIdentity}>
+                                    <span className={styles.userAvatar} aria-hidden="true">
+                                        {(username ?? "P").slice(0, 1).toUpperCase()}
+                                    </span>
 
-                        {isProgressLoading ? (
-                            <div className={styles.loadingState} role="status">
-                                <span className={styles.loadingDot} aria-hidden="true" />
-                                İlerlemen hazırlanıyor...
-                            </div>
-                        ) : progressError ? (
-                            <p className={styles.errorMessage} role="alert">
-                                {progressError}
-                            </p>
-                        ) : hasActiveGame ? (
-                            <>
-                                <div className={styles.progressSection}>
-                                    <div className={styles.progressInfo}>
-                                        <span>İlerleme</span>
-
-                                        <span>
-                            {completedCount} / 81
-                        </span>
-                                    </div>
-
-                                    <div className={styles.progressTrack}>
-                                        <div
-                                            className={styles.progressBar}
-                                            style={{
-                                                width: `${progressPercentage}%`,
-                                            }}
-                                        />
-                                    </div>
+                                    <p className={styles.welcomeMessage}>
+                                        <span>Oyuncu</span>
+                                        <strong>Hoş geldin, {username ?? "gezgin"}</strong>
+                                    </p>
                                 </div>
 
-                                <div className={styles.actions}>
-                                    <Link
-                                        href="/game"
-                                        className={styles.primaryButton}
-                                    >
-                                        Devam Et
-                                    </Link>
+                                <LogoutButton />
+                            </div>
 
+                            {isProgressLoading ? (
+                                <div className={styles.loadingState} role="status">
+                                    <span className={styles.loadingDot} aria-hidden="true" />
+                                    İlerlemen hazırlanıyor...
+                                </div>
+                            ) : progressError ? (
+                                <p className={styles.errorMessage} role="alert">
+                                    {progressError}
+                                </p>
+                            ) : hasActiveGame ? (
+                                <>
+                                    <div className={styles.progressSection}>
+                                        <div className={styles.progressInfo}>
+                                            <span>İlerleme</span>
+
+                                            <span>
+                                                {completedCount} / 81
+                                            </span>
+                                        </div>
+
+                                        <div className={styles.progressTrack}>
+                                            <div
+                                                className={styles.progressBar}
+                                                style={{
+                                                    width: `${progressPercentage}%`,
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className={styles.actions}>
+                                        <Link
+                                            href="/game"
+                                            className={styles.primaryButton}
+                                        >
+                                            Devam Et
+                                        </Link>
+
+                                        <button
+                                            type="button"
+                                            className={styles.restartButton}
+                                            onClick={() =>
+                                                setIsResetDialogOpen(true)
+                                            }
+                                        >
+                                            Baştan Başla
+                                        </button>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className={styles.actions}>
                                     <button
                                         type="button"
-                                        className={styles.restartButton}
-                                        onClick={() =>
-                                            setIsResetDialogOpen(true)
-                                        }
+                                        onClick={handleRestart}
+                                        className={styles.primaryButton}
                                     >
-                                        Baştan Başla
+                                        Yeni Oyuna Başla
                                     </button>
                                 </div>
-                            </>
-                        ) : (
-                            <div className={styles.actions}>
-                                <button
-                                    type="button"
-                                    onClick={handleRestart}
-                                    className={styles.primaryButton}
-                                >
-                                    Yeni Oyuna Başla
-                                </button>
-                            </div>
-                        )}
-                    </>
+                            )}
+                        </>
                 )}
             </section>
 

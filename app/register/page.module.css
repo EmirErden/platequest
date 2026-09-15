@@ -82,15 +82,24 @@
     box-shadow: 0 0 0 3px rgba(242, 184, 75, 0.14);
 }
 
-.passwordHint {
+.field input.inputInvalid,
+.field input.inputInvalid:focus {
+    border-color: #fb7185;
+    box-shadow: 0 0 0 3px rgba(251, 113, 133, 0.14);
+}
+
+.requiredMessage {
     margin: 0;
-    color: #9ca8bc;
+    color: #fb7185;
     font-size: 12px;
-    line-height: 1.45;
+    line-height: 1.35;
 }
 
 .passwordHintInvalid {
-    color: #fbbf24;
+    margin: 0;
+    color: #fb7185;
+    font-size: 12px;
+    line-height: 1.45;
 }
 
 .errorMessage,
