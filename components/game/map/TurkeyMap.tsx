@@ -1,7 +1,7 @@
 "use client";
 
 import {useRef, useState, type MouseEvent, type PointerEvent} from "react";
-import TurkeyMapSvg from "@/components/TurkeyMapSvg";
+import TurkeyMapSvg from "@/components/game/map/TurkeyMapSvg";
 import styles from "./TurkeyMap.module.css";
 
 type TurkeyMapProps = {

@@ -1,4 +1,4 @@
-import StartScreen from "@/components/StartScreen";
+import StartScreen from "@/components/home/StartScreen";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function Home() {

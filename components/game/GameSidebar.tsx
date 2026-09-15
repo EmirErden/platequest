@@ -2,7 +2,7 @@ import {provinces} from "@/data/provinces";
 import styles from "./GameSidebar.module.css";
 import {useState} from "react";
 import Link from "next/link";
-import ResetGameDialog from "@/components/ResetGameDialog";
+import ResetGameDialog from "@/components/game/ResetGameDialog";
 
 type GameSidebarProps = {
     completedProvinces: string[];
@@ -78,7 +78,7 @@ export default function GameSidebar({
                 </div>
 
                 <div className={styles.footer}>
-                    <Link href="/" className={styles.homeLink} onClick={onClose}>
+                    <Link href="/public" className={styles.homeLink} onClick={onClose}>
                         ← Ana sayfaya dön
                     </Link>
 

@@ -2,7 +2,7 @@
 
 import { SubmitEvent, useState } from "react";
 
-import ProfileMenu from "@/components/ProfileMenu";
+import ProfileMenu from "@/components/profile/ProfileMenu";
 import { createClient } from "@/lib/supabase/client";
 
 import styles from "./Profile.module.css";

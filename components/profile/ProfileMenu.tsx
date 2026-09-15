@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
-import LogoutButton from "@/components/LogoutButton";
+import LogoutButton from "@/components/profile/LogoutButton";
 import { createClient } from "@/lib/supabase/client";
 
 import styles from "./ProfileMenu.module.css";

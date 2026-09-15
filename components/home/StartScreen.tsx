@@ -11,8 +11,8 @@ import {
     type TurkeyPlateProgress,
 } from "@/lib/turkey-plate-progress";
 
-import ResetGameDialog from "@/components/ResetGameDialog";
-import ProfileMenu from "@/components/ProfileMenu";
+import ResetGameDialog from "@/components/game/ResetGameDialog";
+import ProfileMenu from "@/components/profile/ProfileMenu";
 
 import styles from "./StartScreen.module.css";
 

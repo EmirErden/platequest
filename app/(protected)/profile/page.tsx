@@ -1,4 +1,4 @@
-import Profile from "@/components/Profile";
+import Profile from "@/components/profile/Profile";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function ProfilePage() {
