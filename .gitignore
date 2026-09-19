@@ -42,3 +42,9 @@ next-env.d.ts
 
 # JetBrains IDEs
 .idea/
+
+# Local Codex configuration
+/.codex/
+
+# Generated Graphify files
+**/graphify-out/
