@@ -11,6 +11,8 @@ type TurkeyMapProps = {
     completedProvinces?: string[];
     lastCompletedProvince: string | null;
     hoveredProvince: string | null;
+    shouldAnimateCompletion: boolean;
+    onCompletionAnimationEndAction: () => void;
 };
 
 export default function TurkeyMap({
@@ -20,6 +22,8 @@ export default function TurkeyMap({
                                       completedProvinces,
                                       lastCompletedProvince,
                                       hoveredProvince,
+                                      shouldAnimateCompletion,
+                                      onCompletionAnimationEndAction,
                                   }: TurkeyMapProps) {
     const [scale, setScale] = useState(1);
     const [offset, setOffset] = useState({x: 0, y: 0});
@@ -102,6 +106,8 @@ export default function TurkeyMap({
                 completedProvinces={completedProvinces}
                 lastCompletedProvince={lastCompletedProvince}
                 hoveredProvince={hoveredProvince}
+                shouldAnimateCompletion={shouldAnimateCompletion}
+                onCompletionAnimationEndAction={onCompletionAnimationEndAction}
             />
         </div>
         <div className={styles.controls} aria-label="Harita kontrolleri">

@@ -83,6 +83,8 @@ type TurkeyMapSvgProps = {
     completedProvinces?: string[];
     lastCompletedProvince: string | null;
     hoveredProvince: string | null;
+    shouldAnimateCompletion: boolean;
+    onCompletionAnimationEndAction: () => void;
 };
 
 export default function TurkeyMapSvg({
@@ -92,11 +94,11 @@ export default function TurkeyMapSvg({
                                          completedProvinces = [],
                                          lastCompletedProvince,
                                          hoveredProvince,
+                                         shouldAnimateCompletion,
+                                         onCompletionAnimationEndAction,
                                      }: TurkeyMapSvgProps) {
 
     const svgRef = useRef<SVGSVGElement>(null);
-    const isMapComplete = completedProvinces.length === 81;
-
     const [provinceLabels, setProvinceLabels] = useState<ProvinceLabel[]>([]);
 
     const hoveredProvinceStyle = hoveredProvince
@@ -215,7 +217,7 @@ export default function TurkeyMapSvg({
                     .map-complete {
                         transform-box: fill-box;
                         transform-origin: center;
-                        animation: mapCompletionPulse 500ms ease-in-out 3;
+                        animation: mapCompletionPulse 500ms ease-in-out;
                     }
                 
                     @keyframes mapCompletionPulse {
@@ -239,10 +241,15 @@ export default function TurkeyMapSvg({
                 `}
             </style>
             <g
-                className={isMapComplete ? "map-complete" : ""}
+                className={shouldAnimateCompletion ? "map-complete" : ""}
                 id="turkiye"
                 stroke="#ffffff"
                 strokeWidth="0.7"
+                onAnimationEnd={(event) => {
+                    if (event.target === event.currentTarget) {
+                        onCompletionAnimationEndAction();
+                    }
+                }}
             >
                 <g id="adana" data-plakakodu="01" data-alankodu="322" data-iladi="Adana">
                     <path

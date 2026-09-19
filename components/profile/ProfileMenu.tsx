@@ -16,30 +16,43 @@ export default function ProfileMenu({ username: initialUsername }: ProfileMenuPr
     const [isOpen, setIsOpen] = useState(false);
     const [username, setUsername] = useState(initialUsername ?? null);
     const menuRef = useRef<HTMLDivElement>(null);
+    const usernameRequestRef = useRef<Promise<string | null> | null>(null);
 
     useEffect(() => {
         if (initialUsername) {
             return;
         }
 
-        const loadUsername = async () => {
-            const supabase = createClient();
-            const { data: { user } } = await supabase.auth.getUser();
+        let isCurrent = true;
 
-            if (!user) {
-                return;
+        if (!usernameRequestRef.current) {
+            usernameRequestRef.current = (async () => {
+                const supabase = createClient();
+                const { data: { user } } = await supabase.auth.getUser();
+
+                if (!user) {
+                    return null;
+                }
+
+                const { data: profile } = await supabase
+                    .from("profiles")
+                    .select("username")
+                    .eq("id", user.id)
+                    .maybeSingle();
+
+                return profile?.username ?? user.user_metadata.username ?? null;
+            })();
+        }
+
+        void usernameRequestRef.current.then((loadedUsername) => {
+            if (isCurrent) {
+                setUsername(loadedUsername);
             }
+        });
 
-            const { data: profile } = await supabase
-                .from("profiles")
-                .select("username")
-                .eq("id", user.id)
-                .maybeSingle();
-
-            setUsername(profile?.username ?? user.user_metadata.username ?? null);
+        return () => {
+            isCurrent = false;
         };
-
-        void loadUsername();
     }, [initialUsername]);
 
     useEffect(() => {

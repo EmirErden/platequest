@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import confetti from "canvas-confetti";
 
 import GamePanel from "@/components/game/GamePanel";
@@ -18,7 +18,13 @@ import {
     type TurkeyPlateProgress,
 } from "@/lib/turkey-plate-progress";
 
+import type { GameMode } from "@/types/game";
+
 import styles from "./Game.module.css";
+
+type GameProps = {
+    gameMode: GameMode;
+};
 
 function getCelebrationMessage(
     completedProvinces: string[],
@@ -77,7 +83,7 @@ function getCelebrationMessage(
     return null;
 }
 
-export default function Game() {
+export default function Game({ gameMode }: GameProps) {
     const [progress, setProgress] =
         useState<TurkeyPlateProgress | null>(null);
 
@@ -102,39 +108,63 @@ export default function Game() {
     // Toast
     const [successMessage, setSuccessMessage] = useState("");
     const [isToastLeaving, setIsToastLeaving] = useState(false);
+    const [shouldAnimateCompletion, setShouldAnimateCompletion] =
+        useState(false);
+
+    const progressRequestRef = useRef<{
+        gameMode: GameMode;
+        promise: Promise<TurkeyPlateProgress>;
+    } | null>(null);
+    const shouldCelebrateCompletionRef = useRef(false);
 
     useEffect(() => {
-        const loadProgress = async () => {
-            try {
-                setProgressError(null);
+        let isCurrent = true;
+        const existingRequest = progressRequestRef.current;
+        const progressRequest =
+            existingRequest?.gameMode === gameMode
+                ? existingRequest.promise
+                : loadTurkeyPlateProgress(gameMode);
 
-                const savedProgress =
-                    await loadTurkeyPlateProgress();
+        progressRequestRef.current = {
+            gameMode,
+            promise: progressRequest,
+        };
 
-                setProgress(savedProgress);
-            } catch (error) {
+        void progressRequest
+            .then((savedProgress) => {
+                if (isCurrent) {
+                    setProgress(savedProgress);
+                }
+            })
+            .catch((error) => {
+                if (!isCurrent) {
+                    return;
+                }
+
                 console.error("Progress yüklenemedi:", error);
 
                 setProgressError(
                     "Oyun ilerlemesi yüklenemedi."
                 );
-            }
-        };
+            });
 
-        void loadProgress();
-    }, []);
+        return () => {
+            isCurrent = false;
+        };
+    }, [gameMode]);
 
     const currentProgress =
-        progress ?? initialTurkeyPlateProgress();
+        progress ?? initialTurkeyPlateProgress(gameMode);
 
     const {
         currentIndex,
         phase,
         completedProvinces,
         isGameComplete,
+        provinceOrder
     } = currentProgress;
 
-    const currentProvince = provinces[currentIndex];
+    const currentProvince = provinces[provinceOrder[currentIndex]];
 
     const mapHintLevel =
         mapHint?.provinceIndex === currentIndex
@@ -152,9 +182,14 @@ export default function Game() {
             : [];
 
     useEffect(() => {
-        if (!isGameComplete) {
+        if (
+            !isGameComplete ||
+            !shouldCelebrateCompletionRef.current
+        ) {
             return;
         }
+
+        shouldCelebrateCompletionRef.current = false;
 
         const defaults = {
             spread: 70,
@@ -264,11 +299,16 @@ export default function Game() {
         setMapHint(null);
 
         // Önce UI'ı anında güncelle
+        if (updatedProgress.isGameComplete) {
+            shouldCelebrateCompletionRef.current = true;
+            setShouldAnimateCompletion(true);
+        }
+
         setProgress(updatedProgress);
 
         // Sadece il tamamen tamamlandığında DB'ye yaz
         try {
-            await saveTurkeyPlateProgress(updatedProgress);
+            await saveTurkeyPlateProgress(updatedProgress, gameMode);
         } catch (error) {
             console.error("Progress kaydedilemedi:", error);
 
@@ -304,9 +344,9 @@ export default function Game() {
         try {
             setProgressError(null);
 
-            await deleteTurkeyPlateProgress();
+            await deleteTurkeyPlateProgress(gameMode);
 
-            setProgress(initialTurkeyPlateProgress());
+            setProgress(initialTurkeyPlateProgress(gameMode));
 
             setLastCompletedProvince(null);
             setHoveredProvince(null);
@@ -314,6 +354,7 @@ export default function Game() {
             setWrongProvince(null);
             setSuccessMessage("");
             setIsToastLeaving(false);
+            setShouldAnimateCompletion(false);
         } catch (error) {
             console.error("Progress sıfırlanamadı:", error);
 
@@ -416,7 +457,7 @@ export default function Game() {
                 }`}
             >
                 <section className={styles.mapSection}>
-                    <TurkeyMap
+                        <TurkeyMap
                         onProvinceClickAction={
                             handleProvinceClick
                         }
@@ -430,10 +471,16 @@ export default function Game() {
                         lastCompletedProvince={
                             lastCompletedProvince
                         }
-                        hoveredProvince={
-                            hoveredProvince
-                        }
-                    />
+                            hoveredProvince={
+                                hoveredProvince
+                            }
+                            shouldAnimateCompletion={
+                                shouldAnimateCompletion
+                            }
+                            onCompletionAnimationEndAction={() =>
+                                setShouldAnimateCompletion(false)
+                            }
+                        />
                 </section>
 
                 <section className={styles.panelWrapper}>
