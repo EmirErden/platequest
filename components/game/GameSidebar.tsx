@@ -78,7 +78,7 @@ export default function GameSidebar({
                 </div>
 
                 <div className={styles.footer}>
-                    <Link href="/public" className={styles.homeLink} onClick={onClose}>
+                    <Link href="/" className={styles.homeLink} onClick={onClose}>
                         ← Ana sayfaya dön
                     </Link>
 
