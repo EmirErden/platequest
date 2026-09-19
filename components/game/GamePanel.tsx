@@ -136,6 +136,10 @@ export default function GamePanel({
 
             <h2>Bu plaka hangi ile ait?</h2>
 
+            <p className={styles.panelDescription}>
+                İl adını yaz veya haritadaki yerini seç.
+            </p>
+
             <form
                 onSubmit={(event) => {
                     event.preventDefault();

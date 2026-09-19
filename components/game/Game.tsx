@@ -246,7 +246,6 @@ export default function Game({ gameMode }: GameProps) {
         if (
             !progress ||
             isGameComplete ||
-            phase !== "map" ||
             completedProvinces.includes(provinceName)
         ) {
             return;
