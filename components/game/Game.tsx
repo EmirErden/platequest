@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import confetti from "canvas-confetti";
+import Link from "next/link";
 
 import GamePanel from "@/components/game/GamePanel";
 import TurkeyMap from "@/components/game/map/TurkeyMap";
@@ -659,7 +660,7 @@ export default function Game({ gameMode }: GameProps) {
                 </div>
 
                 <div className={styles.headerActions}>
-                    {startedAt && (
+                    {startedAt && !isGameComplete && (
                         <div className={styles.timerArea}>
                             <div
                                 className={styles.timer}
@@ -716,6 +717,10 @@ export default function Game({ gameMode }: GameProps) {
                     phase === "name"
                         ? styles.namePhase
                         : ""
+                } ${
+                    isGameComplete
+                        ? styles.completionMode
+                        : ""
                 }`}
             >
                 <section className={styles.mapSection}>
@@ -750,6 +755,14 @@ export default function Game({ gameMode }: GameProps) {
                         <section
                             className={styles.completionPanel}
                         >
+                            <p
+                                className={
+                                    styles.completionEyebrow
+                                }
+                            >
+                                Tur tamamlandı
+                            </p>
+
                             <div
                                 className={styles.completionIcon}
                             >
@@ -772,12 +785,35 @@ export default function Game({ gameMode }: GameProps) {
                                     styles.completionProgress
                                 }
                             >
-                                {provinces.length} /{" "}
-                                {provinces.length}
+                                <strong>
+                                    {provinces.length} /{" "}
+                                    {provinces.length}
+                                </strong>
+                                <span>il keşfedildi</span>
                             </div>
 
-                            {gameResult && (
-                                <dl className={styles.resultTimes}>
+                            <div
+                                className={
+                                    styles.finalTimeCard
+                                }
+                                aria-live="polite"
+                            >
+                                <span>Final süre</span>
+                                <strong>
+                                    {gameResult
+                                        ? formatDuration(
+                                              gameResult.finalTimeMs
+                                          )
+                                        : "Hesaplanıyor…"}
+                                </strong>
+                            </div>
+
+                            {gameResult ? (
+                                <dl
+                                    className={
+                                        styles.resultTimes
+                                    }
+                                >
                                     <div>
                                         <dt>Oyun süresi</dt>
                                         <dd>{formatDuration(gameResult.playTimeMs)}</dd>
@@ -791,23 +827,39 @@ export default function Game({ gameMode }: GameProps) {
                                             </dd>
                                         </div>
                                     )}
-
-                                    <div className={styles.finalTime}>
-                                        <dt>Final süre</dt>
-                                        <dd>{formatDuration(gameResult.finalTimeMs)}</dd>
-                                    </div>
                                 </dl>
+                            ) : (
+                                <p
+                                    className={
+                                        styles.resultPending
+                                    }
+                                >
+                                    Resmî sonucun hazırlanıyor.
+                                </p>
                             )}
 
-                            <button
+                            <div
                                 className={
-                                    styles.restartButton
+                                    styles.completionActions
                                 }
-                                type="button"
-                                onClick={handleRestart}
                             >
-                                Baştan Başla
-                            </button>
+                                <button
+                                    className={
+                                        styles.restartButton
+                                    }
+                                    type="button"
+                                    onClick={handleRestart}
+                                >
+                                    Yeni Oyun Başlat
+                                </button>
+
+                                <Link
+                                    className={styles.homeButton}
+                                    href="/"
+                                >
+                                    Ana Sayfaya Dön
+                                </Link>
+                            </div>
                         </section>
                     ) : (
                         <GamePanel

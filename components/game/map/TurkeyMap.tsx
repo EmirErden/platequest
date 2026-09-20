@@ -91,6 +91,11 @@ export default function TurkeyMap({
         setOffset({x: 0, y: 0});
     }
 
+    function handleCompletionAnimationEnd() {
+        resetMap();
+        onCompletionAnimationEndAction();
+    }
+
     return <div
         className={`${styles.map} ${isDragging ? styles.isDragging : ""}`}
         onPointerDown={handlePointerDown}
@@ -107,7 +112,7 @@ export default function TurkeyMap({
                 lastCompletedProvince={lastCompletedProvince}
                 hoveredProvince={hoveredProvince}
                 shouldAnimateCompletion={shouldAnimateCompletion}
-                onCompletionAnimationEndAction={onCompletionAnimationEndAction}
+                onCompletionAnimationEndAction={handleCompletionAnimationEnd}
             />
         </div>
         <div className={styles.controls} aria-label="Harita kontrolleri">
