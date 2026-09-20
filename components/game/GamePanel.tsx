@@ -10,7 +10,8 @@ type GamePanelProps = {
     provinceName: string;
     onCorrectNameAction: () => void;
     onMapHintAction: () => void;
-    onNameHintAction: () => void;
+    onNameHintAction: (nextHintCount: number) => void;
+    nameHintCount: number;
     mapHintLevel: number;
     region: string;
     neighbors: string[];
@@ -23,6 +24,7 @@ export default function GamePanel({
                                       onCorrectNameAction,
                                       onMapHintAction,
                                       onNameHintAction,
+                                      nameHintCount,
                                       mapHintLevel,
                                       region,
                                       neighbors,
@@ -31,24 +33,27 @@ export default function GamePanel({
 
     const [answer, setAnswer] = useState("");
     const [message, setMessage] = useState("");
-    const [hintCount, setHintCount] = useState(0);
 
     const formattedPlate = plate.toString().padStart(2, "0");
     const provinceCharacters = Array.from(provinceName);
-    const hintPrefix = provinceCharacters.slice(0, hintCount).join("");
+    const hintPrefix = provinceCharacters
+        .slice(0, nameHintCount)
+        .join("");
 
     useEffect(() => {
         inputRef.current?.focus();
     }, [provinceName]);
 
     function handleSubmit() {
+        const completedAnswer =
+            hintPrefix + answer.slice(hintPrefix.length);
+
         if (
-            answer.trim().toLocaleLowerCase("tr-TR") ===
+            completedAnswer.trim().toLocaleLowerCase("tr-TR") ===
             provinceName.toLocaleLowerCase("tr-TR")
         ) {
             setMessage("");
             setAnswer("");
-            setHintCount(0);
             onCorrectNameAction();
             return;
         }
@@ -62,13 +67,13 @@ export default function GamePanel({
 
     function revealNextHint() {
         const nextHintCount = Math.min(
-            hintCount + 1,
+            nameHintCount + 1,
             provinceCharacters.length
         );
         const nextHintPrefix = provinceCharacters
             .slice(0, nextHintCount)
             .join("");
-        onNameHintAction();
+        onNameHintAction(nextHintCount);
         setAnswer((currentAnswer) => {
             const suffixCharacters = Array.from(
                 currentAnswer.slice(hintPrefix.length)
@@ -76,7 +81,6 @@ export default function GamePanel({
 
             return nextHintPrefix + suffixCharacters.slice(1).join("");
         });
-        setHintCount(nextHintCount);
     }
 
     if (phase === "map") {
@@ -185,7 +189,7 @@ export default function GamePanel({
                         Cevapla
                     </button>
 
-                    {hintCount < provinceCharacters.length && (
+                    {nameHintCount < provinceCharacters.length && (
                         <button
                             className={styles.secondaryButton}
                             type="button"

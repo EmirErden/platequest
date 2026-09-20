@@ -90,6 +90,58 @@
     gap: 10px;
 }
 
+.timerArea {
+    position: relative;
+    flex: 0 0 auto;
+}
+
+.timer {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    min-width: 76px;
+    padding: 7px 10px;
+    border: 1px solid rgba(110, 231, 160, 0.2);
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.65);
+}
+
+.timer span {
+    color: #94a3b8;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.timer strong {
+    color: #86efac;
+    font-size: 15px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+}
+
+.penaltyFeedback {
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    z-index: 2;
+
+    padding: 3px 7px;
+    border: 1px solid rgba(251, 191, 36, 0.38);
+    border-radius: 999px;
+
+    background: rgba(120, 53, 15, 0.94);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+    color: #fde68a;
+
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1;
+    white-space: nowrap;
+
+    pointer-events: none;
+    animation: penaltyFeedback 900ms ease-out forwards;
+}
+
 .progress {
     display: grid;
     grid-template-columns: 1fr auto;
@@ -295,6 +347,50 @@
     font-weight: 700;
 }
 
+.resultTimes {
+    display: grid;
+    gap: 8px;
+    margin: 0 0 16px;
+    padding: 12px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.52);
+}
+
+.resultTimes div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.resultTimes dt,
+.resultTimes dd {
+    margin: 0;
+}
+
+.resultTimes dt {
+    color: #94a3b8;
+    font-size: 12px;
+}
+
+.resultTimes dd {
+    color: #e2e8f0;
+    font-size: 14px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.resultTimes .finalTime {
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.resultTimes .finalTime dt,
+.resultTimes .finalTime dd {
+    color: #86efac;
+}
+
 /* Animations */
 
 @keyframes toastIn {
@@ -318,6 +414,44 @@
     to {
         opacity: 0;
         transform: translateX(-50%) translateY(-10px);
+    }
+}
+
+@keyframes penaltyFeedback {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, 4px) scale(0.96);
+    }
+
+    18% {
+        opacity: 1;
+        transform: translate(-50%, 0) scale(1);
+    }
+
+    68% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -14px) scale(1);
+    }
+}
+
+@keyframes penaltyFeedbackReduced {
+    0%,
+    75% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .penaltyFeedback {
+        animation-name: penaltyFeedbackReduced;
     }
 }
 
@@ -367,7 +501,7 @@
     }
 
     .progress {
-        min-width: 94px;
+        min-width: 78px;
         padding: 8px 9px;
         gap: 4px 8px;
         font-size: 12px;
@@ -381,5 +515,14 @@
     .headerActions {
         flex: 0 0 auto;
         gap: 6px;
+    }
+
+    .timer {
+        min-width: 62px;
+        padding: 7px 8px;
+    }
+
+    .timer strong {
+        font-size: 13px;
     }
 }

@@ -2,10 +2,14 @@
 
 import { provinces } from "@/data/provinces";
 import { createClient } from "@/lib/supabase/client";
-import type {GameMode} from "@/types/game";
+import {
+    getDatabaseGameMode,
+    type GameMode,
+    type GameSessionInfo,
+} from "@/types/game";
 
 export type TurkeyPlateProgress = {
-    version: 1;
+    version: 2;
 
     currentIndex: number;
     phase: "name" | "map";
@@ -17,11 +21,21 @@ export type TurkeyPlateProgress = {
     usedHintForCurrentProvince: boolean;
 
     provinceOrder: number[];
+
+    sessionId: string | null;
+    startedAt: string | null;
+
+    letterHintsUsed: number;
+    regionHintsUsed: number;
+    neighborHintsUsed: number;
+
+    nameHintCount: number;
+    mapHintLevel: number;
 };
 
 export function initialTurkeyPlateProgress(gameMode: GameMode): TurkeyPlateProgress {
     return {
-        version: 1,
+        version: 2,
         currentIndex: 0,
         phase: "name",
         completedProvinces: [],
@@ -29,6 +43,24 @@ export function initialTurkeyPlateProgress(gameMode: GameMode): TurkeyPlateProgr
         hintFreeStreak: 0,
         usedHintForCurrentProvince: false,
         provinceOrder: createProvinceOrder(gameMode),
+        sessionId: null,
+        startedAt: null,
+        letterHintsUsed: 0,
+        regionHintsUsed: 0,
+        neighborHintsUsed: 0,
+        nameHintCount: 0,
+        mapHintLevel: 0,
+    };
+}
+
+export function withGameSession(
+    progress: TurkeyPlateProgress,
+    session: GameSessionInfo
+): TurkeyPlateProgress {
+    return {
+        ...progress,
+        sessionId: session.sessionId,
+        startedAt: session.startedAt,
     };
 }
 
@@ -43,7 +75,11 @@ export function parseTurkeyPlateProgress(
     const progress = value as Record<string, unknown>;
 
     if (
-        (progress.version !== undefined && progress.version !== 1) ||
+        (
+            progress.version !== undefined &&
+            progress.version !== 1 &&
+            progress.version !== 2
+        ) ||
         !Number.isInteger(progress.currentIndex) ||
         (progress.currentIndex as number) < 0 ||
         (progress.currentIndex as number) >= provinces.length ||
@@ -107,8 +143,12 @@ export function parseTurkeyPlateProgress(
         return initialTurkeyPlateProgress(gameMode);
     }
 
+    const session = parseSession(progress);
+    const currentProvince = provinces[provinceOrder[currentIndex] as number];
+    const isVersionTwo = progress.version === 2;
+
     return {
-        version: 1,
+        version: 2,
         currentIndex,
         phase:
             progress.phase === "map"
@@ -123,7 +163,33 @@ export function parseTurkeyPlateProgress(
                 : 0,
         usedHintForCurrentProvince:
             progress.usedHintForCurrentProvince === true,
-        provinceOrder: provinceOrder as number[]
+        provinceOrder: provinceOrder as number[],
+        sessionId: session?.sessionId ?? null,
+        startedAt: session?.startedAt ?? null,
+        letterHintsUsed: isVersionTwo
+            ? readNonNegativeInteger(progress.letterHintsUsed)
+            : 0,
+        regionHintsUsed: isVersionTwo
+            ? readNonNegativeInteger(progress.regionHintsUsed)
+            : 0,
+        neighborHintsUsed: isVersionTwo
+            ? readNonNegativeInteger(progress.neighborHintsUsed)
+            : 0,
+        nameHintCount:
+            !isGameComplete &&
+            isVersionTwo &&
+            isIntegerInRange(
+                progress.nameHintCount,
+                Array.from(currentProvince.name).length
+            )
+                ? (progress.nameHintCount as number)
+                : 0,
+        mapHintLevel:
+            !isGameComplete &&
+            isVersionTwo &&
+            isIntegerInRange(progress.mapHintLevel, 2)
+                ? (progress.mapHintLevel as number)
+                : 0,
     };
 }
 
@@ -228,12 +294,33 @@ function createProvinceOrder(gameMode: GameMode): number[] {
     return order;
 }
 
-function getDatabaseGameMode(gameMode: GameMode): string {
-    switch (gameMode) {
-        case "ordered-plate":
-            return "turkey_ordered_plate";
-
-        case "random-plate":
-            return "turkey_random_plate";
+function parseSession(
+    progress: Record<string, unknown>
+): GameSessionInfo | null {
+    if (
+        typeof progress.sessionId !== "string" ||
+        typeof progress.startedAt !== "string" ||
+        !Number.isFinite(Date.parse(progress.startedAt))
+    ) {
+        return null;
     }
+
+    return {
+        sessionId: progress.sessionId,
+        startedAt: progress.startedAt,
+    };
+}
+
+function readNonNegativeInteger(value: unknown): number {
+    return Number.isInteger(value) && (value as number) >= 0
+        ? (value as number)
+        : 0;
+}
+
+function isIntegerInRange(value: unknown, maximum: number): boolean {
+    return (
+        Number.isInteger(value) &&
+        (value as number) >= 0 &&
+        (value as number) <= maximum
+    );
 }
