@@ -1,0 +1,17 @@
+# Tüm metin dosyaları git'te ve diskte LF satır sonuyla tutulur (macOS ve Windows aynı).
+* text=auto eol=lf
+
+# Windows betikleri CRLF ister
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# İkili dosyalar
+*.ico binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.woff binary
+*.woff2 binary
