@@ -4,6 +4,7 @@ import { SubmitEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Toast from "@/components/toast/Toast";
+import { getAuthErrorMessage } from "@/lib/auth-errors";
 import { createClient } from "@/lib/supabase/client";
 import styles from "./page.module.css";
 
@@ -81,7 +82,18 @@ export default function ResetPasswordPage() {
         });
 
         if (error) {
-            setError("Şifre güncellenirken bir hata oluştu.");
+            const isSessionMissing =
+                error.code === "session_not_found" ||
+                error.code === "session_expired";
+
+            setError(
+                isSessionMissing
+                    ? "Sıfırlama bağlantısının süresi dolmuş. Lütfen yeni bir bağlantı iste."
+                    : getAuthErrorMessage(
+                          error.code,
+                          "Şifre güncellenirken bir hata oluştu."
+                      )
+            );
             setIsLoading(false);
             return;
         }
@@ -226,7 +238,16 @@ export default function ResetPasswordPage() {
                 </form>
 
                 <p className={styles.footerText}>
-                    <Link href="/login">
+                    <Link
+                        href="/login"
+                        onClick={async (event) => {
+                            // Sıfırlama bağlantısı oturum açıyor; vazgeçilirse
+                            // oturumu kapat, yoksa proxy /login'den / 'e yönlendirir.
+                            event.preventDefault();
+                            await createClient().auth.signOut();
+                            router.replace("/login");
+                        }}
+                    >
                         Giriş ekranına dön
                     </Link>
                 </p>

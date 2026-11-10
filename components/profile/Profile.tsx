@@ -3,6 +3,7 @@
 import { SubmitEvent, useState } from "react";
 
 import ProfileMenu from "@/components/profile/ProfileMenu";
+import { getAuthErrorMessage } from "@/lib/auth-errors";
 import { createClient } from "@/lib/supabase/client";
 
 import styles from "./Profile.module.css";
@@ -46,7 +47,12 @@ export default function Profile({ email, username }: ProfileProps) {
         setIsSaving(false);
 
         if (updateError) {
-            setError(updateError.message);
+            setError(
+                getAuthErrorMessage(
+                    updateError.code,
+                    "Şifre güncellenirken bir hata oluştu."
+                )
+            );
             return;
         }
 

@@ -4,6 +4,7 @@ import { SubmitEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Toast from "@/components/toast/Toast";
+import { getAuthErrorMessage } from "@/lib/auth-errors";
 import { createClient } from "@/lib/supabase/client";
 import styles from "./page.module.css";
 
@@ -31,7 +32,9 @@ export default function LoginPage() {
         });
 
         if (error) {
-            setError(error.message);
+            setError(
+                getAuthErrorMessage(error.code, "Giriş yapılırken bir hata oluştu.")
+            );
             setIsLoading(false);
             return;
         }

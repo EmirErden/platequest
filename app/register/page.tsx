@@ -3,6 +3,7 @@
 import { SubmitEvent, useState } from "react";
 import Link from "next/link";
 import Toast from "@/components/toast/Toast";
+import { getAuthErrorMessage } from "@/lib/auth-errors";
 import { createClient } from "@/lib/supabase/client";
 import styles from "./page.module.css";
 
@@ -85,7 +86,10 @@ export default function RegisterPage() {
             setError(
                 error.message === "Database error saving new user"
                     ? "Bu kullanıcı adı zaten kullanılıyor. Lütfen başka bir kullanıcı adı seç."
-                    : error.message
+                    : getAuthErrorMessage(
+                          error.code,
+                          "Kayıt olurken bir hata oluştu."
+                      )
             );
             setIsLoading(false);
             return;
