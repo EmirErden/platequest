@@ -1,28 +1,21 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
-import confetti from "canvas-confetti";
-import Link from "next/link";
+import React, { useEffect, useState } from "react";
 
+import CompletionPanel from "@/components/game/CompletionPanel";
 import GamePanel from "@/components/game/GamePanel";
-import TurkeyMap from "@/components/game/map/TurkeyMap";
 import GameSidebar from "@/components/game/GameSidebar";
+import TurkeyMap from "@/components/game/map/TurkeyMap";
+import { fireCompletionConfetti } from "@/components/game/completion-confetti";
+import { useElapsedTime } from "@/components/game/hooks/useElapsedTime";
+import { useGameProgress } from "@/components/game/hooks/useGameProgress";
+import { usePenaltyFeedback } from "@/components/game/hooks/usePenaltyFeedback";
+import { useSuccessToast } from "@/components/game/hooks/useSuccessToast";
 import ProfileMenu from "@/components/profile/ProfileMenu";
 
 import { provinces } from "@/data/provinces";
 
-import {
-    deleteTurkeyPlateProgress,
-    initialTurkeyPlateProgress,
-    loadTurkeyPlateProgress,
-    saveTurkeyPlateProgress,
-    type TurkeyPlateProgress,
-    withGameSession,
-} from "@/lib/turkey-plate-progress";
-import {
-    finishGameSession,
-    startGameSession,
-} from "@/lib/game-session-client";
+import { getCelebrationMessage } from "@/lib/game-celebration";
 import {
     calculatePenaltyTimeMs,
     formatDuration,
@@ -31,10 +24,14 @@ import {
     NEIGHBOR_HINT_PENALTY_MS,
     REGION_HINT_PENALTY_MS,
 } from "@/lib/game-timing";
+import type { TurkeyPlateProgress } from "@/lib/turkey-plate-progress";
 
-import type { GameMode, GameResult } from "@/types/game";
+import type { GameMode } from "@/types/game";
 
 import styles from "./Game.module.css";
+
+// TurkeyMap'teki yanlış il sallanma animasyonunun süresi.
+const WRONG_PROVINCE_FLASH_MS = 500;
 
 type GameProps = {
     gameMode: GameMode;
@@ -42,103 +39,31 @@ type GameProps = {
     username: string | null;
 };
 
-type PenaltyFeedback = {
-    id: number;
-    penaltyMs: number;
-};
-
-async function loadOrStartGame(
-    gameMode: GameMode,
-    userId: string
-): Promise<TurkeyPlateProgress> {
-    const savedProgress = await loadTurkeyPlateProgress(gameMode, userId);
-
-    if (
-        savedProgress.isGameComplete ||
-        (savedProgress.sessionId && savedProgress.startedAt)
-    ) {
-        return savedProgress;
-    }
-
-    const session = await startGameSession(gameMode);
-    const progressWithSession = withGameSession(
-        savedProgress,
-        session
-    );
-
-    await saveTurkeyPlateProgress(progressWithSession, gameMode, userId);
-
-    return progressWithSession;
-}
-
-function getCelebrationMessage(
-    completedProvinces: string[],
-    hintFreeStreak: number,
-    provinceName: string
-) {
-    const completedCount = completedProvinces.length;
-
-    const completedRegion = provinces.find(
-        (province) => province.name === provinceName
-    )?.region;
-
-    if (completedCount === provinces.length) {
-        return "✦ Türkiye turu tamamlandı!";
-    }
-
-    if (
-        completedRegion &&
-        provinces
-            .filter((province) => province.region === completedRegion)
-            .every((province) =>
-                completedProvinces.includes(province.name)
-            )
-    ) {
-        return `✦ ${completedRegion} turu tamamlandı!`;
-    }
-
-    if (hintFreeStreak === 10) {
-        return "✦ Hafızadan haritaya: 10 il ipucusuz!";
-    }
-
-    if (hintFreeStreak === 5) {
-        return "✦ Kusursuz beşli: 5 il ipucusuz!";
-    }
-
-    if (hintFreeStreak === 3) {
-        return "✦ İz sürücü: 3 il ipucusuz!";
-    }
-
-    if (completedCount === 71) {
-        return "✦ Son düzlük: Son 10 il kaldı!";
-    }
-
-    if (completedCount === 41) {
-        return "✦ Yarı yol: Türkiye'nin yarısı tamam!";
-    }
-
-    if (completedCount === 10) {
-        return "✦ Plaka avcısı: İlk 10 il tamam!";
-    }
-
-    if (completedCount === 3) {
-        return "✦ Isınma turu tamamlandı!";
-    }
-
-    return null;
-}
-
 export default function Game({ gameMode, userId, username }: GameProps) {
-    const [progress, setProgress] =
-        useState<TurkeyPlateProgress | null>(null);
+    const {
+        progress,
+        progressError,
+        gameResult,
+        getLatestProgress,
+        updateProgress,
+        persistHintProgress,
+        persistCompletedProvince,
+        restartGame,
+    } = useGameProgress(gameMode, userId);
 
-    const [progressError, setProgressError] =
-        useState<string | null>(null);
-    const [gameResult, setGameResult] =
-        useState<GameResult | null>(null);
-    const [elapsedTimeMs, setElapsedTimeMs] = useState(0);
-    const [penaltyFeedback, setPenaltyFeedback] =
-        useState<PenaltyFeedback | null>(null);
+    const {
+        penaltyFeedback,
+        enqueuePenaltyFeedback,
+        handlePenaltyFeedbackEnd,
+        resetPenaltyFeedback,
+    } = usePenaltyFeedback();
+
+    const {
+        toastMessage,
+        isToastLeaving,
+        showToast,
+        hideToast,
+    } = useSuccessToast();
 
     // Sidebar
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -150,191 +75,43 @@ export default function Game({ gameMode, userId, username }: GameProps) {
         useState<string | null>(null);
     const [lastCompletedProvince, setLastCompletedProvince] =
         useState<string | null>(null);
-
-    // Toast
-    const [successMessage, setSuccessMessage] = useState("");
-    const [isToastLeaving, setIsToastLeaving] = useState(false);
     const [shouldAnimateCompletion, setShouldAnimateCompletion] =
         useState(false);
 
-    const progressRequestRef = useRef<{
-        gameMode: GameMode;
-        promise: Promise<TurkeyPlateProgress>;
-    } | null>(null);
-    const progressRef = useRef<TurkeyPlateProgress | null>(null);
-    const progressSaveQueueRef = useRef<Promise<void>>(
-        Promise.resolve()
-    );
-    const penaltyFeedbackQueueRef = useRef<number[]>([]);
-    const isPenaltyFeedbackActiveRef = useRef(false);
-    const penaltyFeedbackIdRef = useRef(0);
-    const shouldCelebrateCompletionRef = useRef(false);
-
-    useEffect(() => {
-        let isCurrent = true;
-        const existingRequest = progressRequestRef.current;
-        const progressRequest =
-            existingRequest?.gameMode === gameMode
-                ? existingRequest.promise
-                : loadOrStartGame(gameMode, userId);
-
-        progressRequestRef.current = {
-            gameMode,
-            promise: progressRequest,
-        };
-
-        void progressRequest
-            .then((savedProgress) => {
-                if (isCurrent) {
-                    progressRef.current = savedProgress;
-                    setProgress(savedProgress);
-
-                    if (
-                        savedProgress.isGameComplete &&
-                        savedProgress.sessionId
-                    ) {
-                        void finishGameSession(
-                            gameMode,
-                            savedProgress.sessionId,
-                            savedProgress
-                        )
-                            .then((result) => {
-                                if (isCurrent) {
-                                    setGameResult(result);
-                                }
-                            })
-                            .catch((error) => {
-                                if (isCurrent) {
-                                    console.error(
-                                        "Oyun sonucu yüklenemedi:",
-                                        error
-                                    );
-                                    setProgressError(
-                                        "Oyun sonucu yüklenemedi. Sayfayı yenileyerek tekrar deneyebilirsin."
-                                    );
-                                }
-                            });
-                    }
-                }
-            })
-            .catch((error) => {
-                if (!isCurrent) {
-                    return;
-                }
-
-                console.error("Progress yüklenemedi:", error);
-
-                setProgressError(
-                    "Oyun ilerlemesi yüklenemedi."
-                );
-            });
-
-        return () => {
-            isCurrent = false;
-        };
-    }, [gameMode, userId]);
-
-    const currentProgress =
-        progress ?? initialTurkeyPlateProgress(gameMode);
-
-    const {
-        currentIndex,
-        phase,
-        completedProvinces,
+    const isGameComplete = progress?.isGameComplete ?? false;
+    const elapsedTimeMs = useElapsedTime(
+        progress?.startedAt ?? null,
         isGameComplete,
-        provinceOrder,
-        mapHintLevel,
-        nameHintCount,
-        startedAt,
-    } = currentProgress;
-
-    const currentProvince = provinces[provinceOrder[currentIndex]];
-
-    const highlightedProvinces =
-        mapHintLevel >= 1
-            ? provinces
-                .filter(
-                    (province) =>
-                        province.region === currentProvince.region
-                )
-                .map((province) => province.name)
-            : [];
+        gameResult?.playTimeMs ?? null
+    );
 
     useEffect(() => {
-        if (!startedAt) {
+        if (!wrongProvince) {
             return;
         }
 
-        const startedAtMs = Date.parse(startedAt);
-        const updateElapsedTime = () => {
-            setElapsedTimeMs(
-                gameResult?.playTimeMs ??
-                Math.max(0, Date.now() - startedAtMs)
-            );
-        };
-        const initialUpdate = window.setTimeout(updateElapsedTime, 0);
+        const timeout = window.setTimeout(() => {
+            setWrongProvince(null);
+        }, WRONG_PROVINCE_FLASH_MS);
 
-        if (gameResult || isGameComplete) {
-            return () => window.clearTimeout(initialUpdate);
-        }
-
-        const interval = window.setInterval(updateElapsedTime, 1_000);
-
-        return () => {
-            window.clearTimeout(initialUpdate);
-            window.clearInterval(interval);
-        };
-    }, [gameResult, isGameComplete, startedAt]);
-
-    useEffect(() => {
-        if (
-            !isGameComplete ||
-            !shouldCelebrateCompletionRef.current
-        ) {
-            return;
-        }
-
-        shouldCelebrateCompletionRef.current = false;
-
-        const defaults = {
-            spread: 70,
-            ticks: 200,
-            gravity: 1,
-            decay: 0.95,
-            startVelocity: 40,
-            disableForReducedMotion: true,
-        };
-
-        confetti({
-            ...defaults,
-            particleCount: 100,
-            angle: 60,
-            origin: { x: 0, y: 0.65 },
-        });
-
-        confetti({
-            ...defaults,
-            particleCount: 100,
-            angle: 120,
-            origin: { x: 1, y: 0.65 },
-        });
-    }, [isGameComplete]);
+        return () => window.clearTimeout(timeout);
+    }, [wrongProvince]);
 
     function handleCorrectName() {
-        const activeProgress = progressRef.current;
+        const activeProgress = getLatestProgress();
 
         if (!activeProgress || activeProgress.isGameComplete) {
             return;
         }
 
-        setCurrentProgress({
+        updateProgress({
             ...activeProgress,
             phase: "map",
         });
     }
 
     function handleNameHint(nextHintCount: number) {
-        const activeProgress = progressRef.current;
+        const activeProgress = getLatestProgress();
 
         if (
             !activeProgress ||
@@ -353,16 +130,16 @@ export default function Game({ gameMode, userId, username }: GameProps) {
                 (nextHintCount - activeProgress.nameHintCount),
         };
 
-        setCurrentProgress(updatedProgress);
+        updateProgress(updatedProgress);
         enqueuePenaltyFeedback(
             (nextHintCount - activeProgress.nameHintCount) *
             LETTER_HINT_PENALTY_MS
         );
-        persistProgress(updatedProgress);
+        persistHintProgress(updatedProgress);
     }
 
     function handleMapHint() {
-        const activeProgress = progressRef.current;
+        const activeProgress = getLatestProgress();
 
         if (
             !activeProgress ||
@@ -385,222 +162,88 @@ export default function Game({ gameMode, userId, username }: GameProps) {
                 (nextMapHintLevel === 2 ? 1 : 0),
         };
 
-        setCurrentProgress(updatedProgress);
+        updateProgress(updatedProgress);
         enqueuePenaltyFeedback(
             nextMapHintLevel === 1
                 ? REGION_HINT_PENALTY_MS
                 : NEIGHBOR_HINT_PENALTY_MS
         );
-        persistProgress(updatedProgress);
+        persistHintProgress(updatedProgress);
     }
 
-    async function handleProvinceClick(
-        provinceName: string
-    ) {
+    function handleProvinceClick(provinceName: string) {
+        const activeProgress = getLatestProgress();
+
         if (
-            !progressRef.current ||
-            progressRef.current.isGameComplete ||
-            progressRef.current.completedProvinces.includes(provinceName)
+            !activeProgress ||
+            activeProgress.isGameComplete ||
+            activeProgress.completedProvinces.includes(provinceName)
         ) {
             return;
         }
 
-        const activeProgress = progressRef.current;
+        // Beklenen il render'daki değerden değil en güncel state'ten
+        // hesaplanıyor: ekran yenilenmeden gelen ikinci tıklama eski ile
+        // karşılaştırılmasın.
+        const expectedProvince =
+            provinces[activeProgress.provinceOrder[activeProgress.currentIndex]];
 
-        if (provinceName !== currentProvince.name) {
+        if (provinceName !== expectedProvince.name) {
             setWrongProvince(provinceName);
-
-            setTimeout(() => {
-                setWrongProvince(null);
-            }, 500);
-
             return;
         }
 
         const nextIndex = activeProgress.currentIndex + 1;
 
-        const updatedCompletedProvinces = [
-            ...activeProgress.completedProvinces,
-            provinceName,
-        ];
-
-        const nextStreak =
-            activeProgress.usedHintForCurrentProvince
-                ? 0
-                : activeProgress.hintFreeStreak + 1;
-
         const updatedProgress: TurkeyPlateProgress = {
             ...activeProgress,
-
-            currentIndex: Math.min(
-                nextIndex,
-                provinces.length - 1
-            ),
-
+            currentIndex: Math.min(nextIndex, provinces.length - 1),
             phase: "name",
-
-            completedProvinces:
-            updatedCompletedProvinces,
-
-            isGameComplete:
-                nextIndex >= provinces.length,
-
-            hintFreeStreak: nextStreak,
-
+            completedProvinces: [
+                ...activeProgress.completedProvinces,
+                provinceName,
+            ],
+            isGameComplete: nextIndex >= provinces.length,
+            hintFreeStreak: activeProgress.usedHintForCurrentProvince
+                ? 0
+                : activeProgress.hintFreeStreak + 1,
             usedHintForCurrentProvince: false,
             nameHintCount: 0,
             mapHintLevel: 0,
         };
 
-        // Önce UI'ı anında güncelle
-        if (updatedProgress.isGameComplete) {
-            shouldCelebrateCompletionRef.current = true;
-            setShouldAnimateCompletion(true);
-        }
-
-        setCurrentProgress(updatedProgress);
-
-        // Sadece il tamamen tamamlandığında DB'ye yaz
-        try {
-            await queueProgressSave(updatedProgress);
-
-            if (
-                updatedProgress.isGameComplete &&
-                updatedProgress.sessionId
-            ) {
-                const result = await finishGameSession(
-                    gameMode,
-                    updatedProgress.sessionId,
-                    updatedProgress
-                );
-
-                setGameResult(result);
-            }
-        } catch (error) {
-            console.error("Oyun ilerlemesi/sonucu kaydedilemedi:", error);
-
-            setProgressError(
-                "İlerleme veya oyun sonucu kaydedilemedi. İnternet bağlantını kontrol et."
-            );
-        }
-
+        // Arayüz hemen güncellenir; kayıt arka planda sıraya girer.
+        updateProgress(updatedProgress);
         setLastCompletedProvince(provinceName);
-
-        setSuccessMessage(
+        showToast(
             getCelebrationMessage(
                 updatedProgress.completedProvinces,
                 updatedProgress.hintFreeStreak,
-                currentProvince.name
-            ) ?? `${currentProvince.name} tamamlandı!`
+                expectedProvince.name
+            ) ?? `${expectedProvince.name} tamamlandı!`
         );
 
-        setIsToastLeaving(false);
+        if (updatedProgress.isGameComplete) {
+            setShouldAnimateCompletion(true);
+            fireCompletionConfetti();
+        }
 
-        setTimeout(() => {
-            setIsToastLeaving(true);
-
-            setTimeout(() => {
-                setSuccessMessage("");
-                setIsToastLeaving(false);
-            }, 300);
-        }, 4000);
-
+        void persistCompletedProvince(updatedProgress);
     }
 
     async function handleRestart() {
-        try {
-            setProgressError(null);
+        const isRestarted = await restartGame();
 
-            await progressSaveQueueRef.current.catch(() => undefined);
-            await deleteTurkeyPlateProgress(gameMode);
-
-            const initialProgress = initialTurkeyPlateProgress(gameMode);
-            setCurrentProgress(initialProgress);
-            setGameResult(null);
-
-            const session = await startGameSession(gameMode, true);
-            const restartedProgress = withGameSession(
-                initialProgress,
-                session
-            );
-
-            setCurrentProgress(restartedProgress);
-            await queueProgressSave(restartedProgress);
-
-            setLastCompletedProvince(null);
-            setHoveredProvince(null);
-            setWrongProvince(null);
-            setSuccessMessage("");
-            setIsToastLeaving(false);
-            setShouldAnimateCompletion(false);
-            penaltyFeedbackQueueRef.current = [];
-            isPenaltyFeedbackActiveRef.current = false;
-            setPenaltyFeedback(null);
-        } catch (error) {
-            console.error("Progress sıfırlanamadı:", error);
-
-            setProgressError(
-                "Oyun sıfırlanırken bir hata oluştu."
-            );
-        }
-    }
-
-    function setCurrentProgress(nextProgress: TurkeyPlateProgress) {
-        progressRef.current = nextProgress;
-        setProgress(nextProgress);
-    }
-
-    function queueProgressSave(
-        nextProgress: TurkeyPlateProgress
-    ): Promise<void> {
-        const saveRequest = progressSaveQueueRef.current
-            .catch(() => undefined)
-            .then(() =>
-                saveTurkeyPlateProgress(nextProgress, gameMode, userId)
-            );
-
-        progressSaveQueueRef.current = saveRequest.catch(() => undefined);
-
-        return saveRequest;
-    }
-
-    function persistProgress(nextProgress: TurkeyPlateProgress) {
-        void queueProgressSave(nextProgress).catch((error) => {
-            console.error("İpucu ilerlemesi kaydedilemedi:", error);
-            setProgressError(
-                "İpucu kaydedilemedi. İnternet bağlantını kontrol et."
-            );
-        });
-    }
-
-    function enqueuePenaltyFeedback(penaltyMs: number) {
-        if (isPenaltyFeedbackActiveRef.current) {
-            penaltyFeedbackQueueRef.current.push(penaltyMs);
+        if (!isRestarted) {
             return;
         }
 
-        showPenaltyFeedback(penaltyMs);
-    }
-
-    function showPenaltyFeedback(penaltyMs: number) {
-        isPenaltyFeedbackActiveRef.current = true;
-        penaltyFeedbackIdRef.current += 1;
-        setPenaltyFeedback({
-            id: penaltyFeedbackIdRef.current,
-            penaltyMs,
-        });
-    }
-
-    function handlePenaltyFeedbackEnd() {
-        const nextPenalty = penaltyFeedbackQueueRef.current.shift();
-
-        if (nextPenalty !== undefined) {
-            showPenaltyFeedback(nextPenalty);
-            return;
-        }
-
-        isPenaltyFeedbackActiveRef.current = false;
-        setPenaltyFeedback(null);
+        setLastCompletedProvince(null);
+        setHoveredProvince(null);
+        setWrongProvince(null);
+        setShouldAnimateCompletion(false);
+        hideToast();
+        resetPenaltyFeedback();
     }
 
     if (progressError && !progress) {
@@ -627,6 +270,28 @@ export default function Game({ gameMode, userId, username }: GameProps) {
         );
     }
 
+    const {
+        currentIndex,
+        phase,
+        completedProvinces,
+        provinceOrder,
+        mapHintLevel,
+        nameHintCount,
+        startedAt,
+    } = progress;
+
+    const currentProvince = provinces[provinceOrder[currentIndex]];
+
+    const highlightedProvinces =
+        mapHintLevel >= 1
+            ? provinces
+                .filter(
+                    (province) =>
+                        province.region === currentProvince.region
+                )
+                .map((province) => province.name)
+            : [];
+
     const accumulatedPenaltyMs = calculatePenaltyTimeMs(progress);
     const displayedTimeMs = gameResult?.finalTimeMs ??
         elapsedTimeMs + accumulatedPenaltyMs;
@@ -639,7 +304,7 @@ export default function Game({ gameMode, userId, username }: GameProps) {
                 </div>
             )}
 
-            {successMessage && (
+            {toastMessage && (
                 <div
                     className={`${styles.successToast} ${
                         isToastLeaving
@@ -651,7 +316,7 @@ export default function Game({ gameMode, userId, username }: GameProps) {
                         ✓
                     </span>
 
-                    {successMessage}
+                    {toastMessage}
                 </div>
             )}
 
@@ -729,161 +394,39 @@ export default function Game({ gameMode, userId, username }: GameProps) {
                 }`}
             >
                 <section className={styles.mapSection}>
-                        <TurkeyMap
-                        onProvinceClickAction={
-                            handleProvinceClick
-                        }
+                    <TurkeyMap
+                        onProvinceClickAction={handleProvinceClick}
                         wrongProvince={wrongProvince}
-                        highlightedProvinces={
-                            highlightedProvinces
+                        highlightedProvinces={highlightedProvinces}
+                        completedProvinces={completedProvinces}
+                        lastCompletedProvince={lastCompletedProvince}
+                        hoveredProvince={hoveredProvince}
+                        shouldAnimateCompletion={shouldAnimateCompletion}
+                        onCompletionAnimationEndAction={() =>
+                            setShouldAnimateCompletion(false)
                         }
-                        completedProvinces={
-                            completedProvinces
-                        }
-                        lastCompletedProvince={
-                            lastCompletedProvince
-                        }
-                            hoveredProvince={
-                                hoveredProvince
-                            }
-                            shouldAnimateCompletion={
-                                shouldAnimateCompletion
-                            }
-                            onCompletionAnimationEndAction={() =>
-                                setShouldAnimateCompletion(false)
-                            }
-                        />
+                    />
                 </section>
 
                 <section className={styles.panelWrapper}>
                     {isGameComplete ? (
-                        <section
-                            className={styles.completionPanel}
-                        >
-                            <p
-                                className={
-                                    styles.completionEyebrow
-                                }
-                            >
-                                Tur tamamlandı
-                            </p>
-
-                            <div
-                                className={styles.completionIcon}
-                            >
-                                ✓
-                            </div>
-
-                            <h2>Türkiye tamamlandı!</h2>
-
-                            <p
-                                className={
-                                    styles.completionText
-                                }
-                            >
-                                81 ilin plaka kodunu ve
-                                haritadaki yerini tamamladın.
-                            </p>
-
-                            <div
-                                className={
-                                    styles.completionProgress
-                                }
-                            >
-                                <strong>
-                                    {provinces.length} /{" "}
-                                    {provinces.length}
-                                </strong>
-                                <span>il keşfedildi</span>
-                            </div>
-
-                            <div
-                                className={
-                                    styles.finalTimeCard
-                                }
-                                aria-live="polite"
-                            >
-                                <span>Final süre</span>
-                                <strong>
-                                    {gameResult
-                                        ? formatDuration(
-                                              gameResult.finalTimeMs
-                                          )
-                                        : "Hesaplanıyor…"}
-                                </strong>
-                            </div>
-
-                            {gameResult ? (
-                                <dl
-                                    className={
-                                        styles.resultTimes
-                                    }
-                                >
-                                    <div>
-                                        <dt>Oyun süresi</dt>
-                                        <dd>{formatDuration(gameResult.playTimeMs)}</dd>
-                                    </div>
-
-                                    {gameResult.penaltyTimeMs > 0 && (
-                                        <div>
-                                            <dt>İpucu cezası</dt>
-                                            <dd>
-                                                +{formatDuration(gameResult.penaltyTimeMs)}
-                                            </dd>
-                                        </div>
-                                    )}
-                                </dl>
-                            ) : (
-                                <p
-                                    className={
-                                        styles.resultPending
-                                    }
-                                >
-                                    Resmî sonucun hazırlanıyor.
-                                </p>
-                            )}
-
-                            <div
-                                className={
-                                    styles.completionActions
-                                }
-                            >
-                                <button
-                                    className={
-                                        styles.restartButton
-                                    }
-                                    type="button"
-                                    onClick={handleRestart}
-                                >
-                                    Yeni Oyun Başlat
-                                </button>
-
-                                <Link
-                                    className={styles.homeButton}
-                                    href="/"
-                                >
-                                    Ana Sayfaya Dön
-                                </Link>
-                            </div>
-                        </section>
+                        <CompletionPanel
+                            provinceCount={provinces.length}
+                            gameResult={gameResult}
+                            onRestartAction={handleRestart}
+                        />
                     ) : (
                         <GamePanel
                             plate={currentProvince.plate}
-                            provinceName={
-                                currentProvince.name
-                            }
+                            provinceName={currentProvince.name}
                             phase={phase}
-                            onCorrectNameAction={
-                                handleCorrectName
-                            }
+                            onCorrectNameAction={handleCorrectName}
                             onMapHintAction={handleMapHint}
                             onNameHintAction={handleNameHint}
                             nameHintCount={nameHintCount}
                             mapHintLevel={mapHintLevel}
                             region={currentProvince.region}
-                            neighbors={
-                                currentProvince.neighbors
-                            }
+                            neighbors={currentProvince.neighbors}
                         />
                     )}
                 </section>
