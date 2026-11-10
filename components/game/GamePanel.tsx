@@ -2,7 +2,7 @@
 
 import {useEffect, useRef, useState} from "react";
 import styles from "./GamePanel.module.css";
-import LicensePlate from "@/components/graphify-out/LicensePlate";
+import LicensePlate from "@/components/game/LicensePlate";
 
 type GamePanelProps = {
     plate: number;
