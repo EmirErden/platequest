@@ -27,20 +27,30 @@ export default function ProfileMenu({ username: initialUsername }: ProfileMenuPr
 
         if (!usernameRequestRef.current) {
             usernameRequestRef.current = (async () => {
+                // Normalde username sunucudan prop olarak geliyor; bu yol
+                // sadece profil satırı yoksa çalışan bir yedek.
                 const supabase = createClient();
-                const { data: { user } } = await supabase.auth.getUser();
+                const { data } = await supabase.auth.getClaims();
+                const claims = data?.claims;
 
-                if (!user) {
+                if (!claims?.sub) {
                     return null;
                 }
 
                 const { data: profile } = await supabase
                     .from("profiles")
                     .select("username")
-                    .eq("id", user.id)
+                    .eq("id", claims.sub)
                     .maybeSingle();
 
-                return profile?.username ?? user.user_metadata.username ?? null;
+                const metadataUsername = claims.user_metadata?.username;
+
+                return (
+                    profile?.username ??
+                    (typeof metadataUsername === "string"
+                        ? metadataUsername
+                        : null)
+                );
             })();
         }
 

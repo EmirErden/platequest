@@ -1,20 +1,13 @@
 import Profile from "@/components/profile/Profile";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/auth";
 
 export default async function ProfilePage() {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    const { data: profile } = await supabase
-        .from("profiles")
-        .select("username")
-        .eq("id", user!.id)
-        .maybeSingle();
+    const user = await requireUser();
 
     return (
         <Profile
-            email={user!.email ?? ""}
-            username={profile?.username ?? user!.user_metadata.username ?? "Gezgin"}
+            email={user.email}
+            username={user.username ?? "Gezgin"}
         />
     );
 }

@@ -1,21 +1,16 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import React from "react";
 
+import { requireUser } from "@/lib/auth";
+
+// Ek güvence: asıl kontrol her sayfada `requireUser()` ile yapılıyor (Next,
+// layout'ların sayfa geçişlerinde yeniden çalışmadığı için yalnızca layout'a
+// güvenmemeyi öneriyor). `getCurrentUser` cache'li olduğundan ek maliyeti yok.
 export default async function ProtectedLayout({
-                                                  children,
-                                              }: Readonly<{
+    children,
+}: Readonly<{
     children: React.ReactNode;
 }>) {
-    const supabase = await createClient();
-
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-        redirect("/login");
-    }
+    await requireUser();
 
     return children;
 }

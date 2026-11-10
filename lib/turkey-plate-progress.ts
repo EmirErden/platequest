@@ -193,7 +193,10 @@ export function parseTurkeyPlateProgress(
     };
 }
 
-export async function loadTurkeyPlateProgress(gameMode: GameMode): Promise<TurkeyPlateProgress> {
+export async function loadTurkeyPlateProgress(
+    gameMode: GameMode,
+    userId: string
+): Promise<TurkeyPlateProgress> {
     const supabase = createClient();
 
     const { data, error } = await supabase
@@ -212,7 +215,8 @@ export async function loadTurkeyPlateProgress(gameMode: GameMode): Promise<Turke
 
         await saveTurkeyPlateProgress(
             initialProgress,
-            gameMode
+            gameMode,
+            userId
         );
 
         return initialProgress;
@@ -224,27 +228,17 @@ export async function loadTurkeyPlateProgress(gameMode: GameMode): Promise<Turke
 export async function saveTurkeyPlateProgress(
     progress: TurkeyPlateProgress,
     gameMode: GameMode,
+    // Sunucudaki sayfadan geliyor; her kayıtta Auth'a sormaya gerek yok.
+    // Başka bir ID gönderilse bile RLS (auth.uid() = user_id) yazmayı reddeder.
+    userId: string
 ): Promise<void> {
     const supabase = createClient();
-
-    const {
-        data: { user },
-        error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError) {
-        throw userError;
-    }
-
-    if (!user) {
-        throw new Error("User is not authenticated.");
-    }
 
     const { error } = await supabase
         .from("user_game_progress")
         .upsert(
             {
-                user_id: user.id,
+                user_id: userId,
                 game_mode: getDatabaseGameMode(gameMode),
                 state: progress,
                 status: progress.isGameComplete

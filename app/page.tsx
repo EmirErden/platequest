@@ -1,29 +1,13 @@
 import StartScreen from "@/components/home/StartScreen";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/auth";
 
 export default async function Home() {
-    const supabase = await createClient();
-
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
-
-    let username: string | null = null;
-
-    if (user) {
-        const { data: profile } = await supabase
-            .from("profiles")
-            .select("username")
-            .eq("id", user.id)
-            .single();
-
-        username = profile?.username ?? null;
-    }
+    const user = await getCurrentUser();
 
     return (
         <StartScreen
             isAuthenticated={!!user}
-            username={username}
+            username={user?.username ?? null}
         />
     );
 }

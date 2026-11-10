@@ -38,6 +38,8 @@ import styles from "./Game.module.css";
 
 type GameProps = {
     gameMode: GameMode;
+    userId: string;
+    username: string | null;
 };
 
 type PenaltyFeedback = {
@@ -46,9 +48,10 @@ type PenaltyFeedback = {
 };
 
 async function loadOrStartGame(
-    gameMode: GameMode
+    gameMode: GameMode,
+    userId: string
 ): Promise<TurkeyPlateProgress> {
-    const savedProgress = await loadTurkeyPlateProgress(gameMode);
+    const savedProgress = await loadTurkeyPlateProgress(gameMode, userId);
 
     if (
         savedProgress.isGameComplete ||
@@ -63,7 +66,7 @@ async function loadOrStartGame(
         session
     );
 
-    await saveTurkeyPlateProgress(progressWithSession, gameMode);
+    await saveTurkeyPlateProgress(progressWithSession, gameMode, userId);
 
     return progressWithSession;
 }
@@ -125,7 +128,7 @@ function getCelebrationMessage(
     return null;
 }
 
-export default function Game({ gameMode }: GameProps) {
+export default function Game({ gameMode, userId, username }: GameProps) {
     const [progress, setProgress] =
         useState<TurkeyPlateProgress | null>(null);
 
@@ -173,7 +176,7 @@ export default function Game({ gameMode }: GameProps) {
         const progressRequest =
             existingRequest?.gameMode === gameMode
                 ? existingRequest.promise
-                : loadOrStartGame(gameMode);
+                : loadOrStartGame(gameMode, userId);
 
         progressRequestRef.current = {
             gameMode,
@@ -229,7 +232,7 @@ export default function Game({ gameMode }: GameProps) {
         return () => {
             isCurrent = false;
         };
-    }, [gameMode]);
+    }, [gameMode, userId]);
 
     const currentProgress =
         progress ?? initialTurkeyPlateProgress(gameMode);
@@ -552,7 +555,9 @@ export default function Game({ gameMode }: GameProps) {
     ): Promise<void> {
         const saveRequest = progressSaveQueueRef.current
             .catch(() => undefined)
-            .then(() => saveTurkeyPlateProgress(nextProgress, gameMode));
+            .then(() =>
+                saveTurkeyPlateProgress(nextProgress, gameMode, userId)
+            );
 
         progressSaveQueueRef.current = saveRequest.catch(() => undefined);
 
@@ -700,7 +705,7 @@ export default function Game({ gameMode }: GameProps) {
                         {provinces.length}
                     </div>
 
-                    <ProfileMenu />
+                    <ProfileMenu username={username} />
 
                     <button
                         className={styles.drawerOpenButton}
