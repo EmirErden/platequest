@@ -46,5 +46,9 @@ next-env.d.ts
 # Local Codex configuration
 /.codex/
 
+# Local AI agent instructions
+/AGENTS.md
+/CLAUDE.md
+
 # Generated Graphify files
 **/graphify-out/
