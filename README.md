@@ -90,16 +90,39 @@ Değerler Supabase panelinde **Project Settings → API Keys** altında bulunur.
 
 ### 3. Veritabanı
 
-Uygulama Supabase'de şu tabloları kullanır:
+Veritabanı şeması (tablolar, RLS policy'leri, trigger'lar ve yetkiler) `supabase/migrations/` klasöründe tutulur.
 
 | Tablo | Kullanım |
 |---|---|
-| `profiles` | Kullanıcı adı (kayıt sırasında oluşturulur) |
+| `profiles` | Kullanıcı adı; kayıt olunca `auth.users` üzerindeki trigger ile otomatik oluşturulur |
 | `user_game_progress` | Kullanıcı ve oyun modu başına oyun ilerlemesi |
 | `game_sessions` | Oyun başlangıç ve bitiş zamanları |
-| `game_results` | Tamamlanan oyunların süre ve ipucu sonuçları |
+| `game_results` | Tamamlanan oyunların süre ve ipucu sonuçları (`final_time_ms` veritabanında hesaplanır) |
+| `leaderboard_entries` | Skor tablosu için hazırlandı, henüz uygulamada kullanılmıyor |
 
-`profiles` ve `user_game_progress` tablolarına kullanıcının kendi oturumuyla, `game_sessions` ve `game_results` tablolarına ise sunucudan gizli anahtarla erişilir.
+`profiles` ve `user_game_progress` tablolarına kullanıcının kendi oturumuyla, `game_sessions` ve `game_results` tablolarına ise sunucudan gizli anahtarla erişilir. Tüm tablolarda RLS açıktır.
+
+Supabase CLI projeye geliştirme bağımlılığı olarak eklidir (`npx supabase ...`). Şema komutları için [Docker Desktop](https://www.docker.com/products/docker-desktop/) gerekir.
+
+```bash
+# Supabase hesabına giriş ve projeyi bağlama (bir kez)
+npx supabase login
+npx supabase link
+
+# Yeni bir şema değişikliği için migration dosyası oluşturma
+npx supabase migration new <degisiklik-adi>
+
+# Migration'ları canlı veritabanına uygulama
+npx supabase db push --remote
+
+# Dashboard'dan yapılmış değişiklikleri migration olarak geri çekme
+npx supabase db pull --remote
+
+# Yerel ve canlı migration geçmişini karşılaştırma
+npx supabase migration list --remote
+```
+
+> Supabase CLI v3'te komutlar varsayılan olarak yerel Supabase'i (`supabase start`) hedefler; canlı proje için `--remote` gerekir.
 
 ### 4. Geliştirme sunucusunu başlat
 
@@ -138,6 +161,7 @@ data/provinces.ts     81 ilin plaka, bölge ve komşu bilgileri
 lib/                  Supabase istemcileri, ilerleme ve süre hesaplama yardımcıları
 types/game.ts         Oyun modu ve sonuç tipleri
 proxy.ts              Supabase oturumunu yenileyen Next.js proxy'si
+supabase/             Supabase CLI ayarları ve veritabanı migration'ları
 ```
 
 ## Yol haritası
@@ -145,3 +169,4 @@ proxy.ts              Supabase oturumunu yenileyen Next.js proxy'si
 - Yanlış veya ipucuyla bulunan iller için tekrar modu
 - İl → plaka ve haritada gösterilen il → isim gibi ek soru türleri
 - Kısa oyun turları
+- Skor tablosu (`leaderboard_entries` tablosu hazır)
