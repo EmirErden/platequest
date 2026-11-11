@@ -115,6 +115,9 @@ npx supabase migration new <degisiklik-adi>
 # Migration'ları canlı veritabanına uygulama
 npx supabase db push --remote
 
+# Şema değiştiyse TypeScript tiplerini yenileme
+npm run db:types
+
 # Dashboard'dan yapılmış değişiklikleri migration olarak geri çekme
 npx supabase db pull --remote
 
@@ -143,12 +146,20 @@ npm run dev
 # Kod kalitesi kontrolü
 npm run lint
 
+# Testler (Vitest); dosya değiştikçe tekrar çalıştırmak için: npm run test:watch
+npm test
+
 # Üretim derlemesi
 npm run build
 
 # Üretim sunucusunu çalıştırma
 npm run start
+
+# Veritabanı şemasından TypeScript tiplerini yeniden üretme (types/database.ts)
+npm run db:types
 ```
+
+`main`'e her push'ta ve açılan her PR'da GitHub Actions lint, test ve build'i çalıştırır (`.github/workflows/ci.yml`).
 
 ## Proje yapısı
 

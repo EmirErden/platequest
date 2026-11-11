@@ -1,0 +1,46 @@
+# main'e her push'ta ve main'e açılan her PR'da lint, test ve build çalıştırır.
+# Build için Supabase anahtarı gerekmiyor: istemciler sadece istek anında
+# (handler/route içinde) oluşturuluyor, build sırasında hiç çağrılmıyor.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# Aynı dala art arda push gelirse eski çalışmayı iptal et.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Lint, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Kodu indir
+        uses: actions/checkout@v5
+
+      - name: Node kur
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Bağımlılıkları kur
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build

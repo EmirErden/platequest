@@ -26,5 +26,9 @@ export function getAuthErrorMessage(
     code: string | undefined,
     fallback = "Bir hata oluştu. Lütfen tekrar dene."
 ) {
-    return (code && AUTH_ERROR_MESSAGES[code]) || fallback;
+    // Object.hasOwn: "toString", "constructor" gibi miras alınan alanlar
+    // mesaj sanılmasın.
+    return code && Object.hasOwn(AUTH_ERROR_MESSAGES, code)
+        ? AUTH_ERROR_MESSAGES[code]
+        : fallback;
 }
