@@ -7,17 +7,17 @@ import ResetGameDialog from "@/components/game/ResetGameDialog";
 type GameSidebarProps = {
     completedProvinces: string[];
     isOpen: boolean;
-    onClose: () => void;
-    onReset: () => void;
-    onProvinceHover: (province: string | null) => void;
+    onCloseAction: () => void;
+    onResetAction: () => void;
+    onProvinceHoverAction: (province: string | null) => void;
 };
 
 export default function GameSidebar({
                                         completedProvinces,
                                         isOpen,
-                                        onClose,
-                                        onReset,
-                                        onProvinceHover,
+                                        onCloseAction,
+                                        onResetAction,
+                                        onProvinceHoverAction,
                                     }: GameSidebarProps) {
     const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
 
@@ -40,7 +40,7 @@ export default function GameSidebar({
                     <button
                         type="button"
                         className={styles.closeButton}
-                        onClick={onClose}
+                        onClick={onCloseAction}
                     >
                         ×
                     </button>
@@ -59,8 +59,8 @@ export default function GameSidebar({
                                 <div
                                     className={styles.province}
                                     key={province.name}
-                                    onMouseEnter={() => onProvinceHover(province.name)}
-                                    onMouseLeave={() => onProvinceHover(null)}
+                                    onMouseEnter={() => onProvinceHoverAction(province.name)}
+                                    onMouseLeave={() => onProvinceHoverAction(null)}
                                 >
                                 <span className={styles.plate}>
                                     {province.plate
@@ -78,7 +78,7 @@ export default function GameSidebar({
                 </div>
 
                 <div className={styles.footer}>
-                    <Link href="/" className={styles.homeLink} onClick={onClose}>
+                    <Link href="/" className={styles.homeLink} onClick={onCloseAction}>
                         ← Ana sayfaya dön
                     </Link>
 
@@ -93,11 +93,11 @@ export default function GameSidebar({
             </aside>
             {isResetDialogOpen && (
                 <ResetGameDialog
-                    onCancel={() => setIsResetDialogOpen(false)}
-                    onConfirm={() => {
-                        onReset();
+                    onCancelAction={() => setIsResetDialogOpen(false)}
+                    onConfirmAction={() => {
+                        onResetAction();
                         setIsResetDialogOpen(false);
-                        onClose();
+                        onCloseAction();
                     }}
                 />
             )}

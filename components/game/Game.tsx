@@ -81,8 +81,7 @@ export default function Game({ gameMode, userId, username }: GameProps) {
     const isGameComplete = progress?.isGameComplete ?? false;
     const elapsedTimeMs = useElapsedTime(
         progress?.startedAt ?? null,
-        isGameComplete,
-        gameResult?.playTimeMs ?? null
+        isGameComplete
     );
 
     useEffect(() => {
@@ -292,9 +291,10 @@ export default function Game({ gameMode, userId, username }: GameProps) {
                 .map((province) => province.name)
             : [];
 
-    const accumulatedPenaltyMs = calculatePenaltyTimeMs(progress);
-    const displayedTimeMs = gameResult?.finalTimeMs ??
-        elapsedTimeMs + accumulatedPenaltyMs;
+    // Üstteki sayaç sadece oyun sürerken görünür (bitince CompletionPanel
+    // sunucunun resmî süresini gösterir); cezalar anında eklenir.
+    const displayedTimeMs =
+        elapsedTimeMs + calculatePenaltyTimeMs(progress);
 
     return (
         <main className={styles.gamePage}>
@@ -435,9 +435,9 @@ export default function Game({ gameMode, userId, username }: GameProps) {
             <GameSidebar
                 completedProvinces={completedProvinces}
                 isOpen={isDrawerOpen}
-                onClose={() => setIsDrawerOpen(false)}
-                onReset={handleRestart}
-                onProvinceHover={setHoveredProvince}
+                onCloseAction={() => setIsDrawerOpen(false)}
+                onResetAction={handleRestart}
+                onProvinceHoverAction={setHoveredProvince}
             />
         </main>
     );

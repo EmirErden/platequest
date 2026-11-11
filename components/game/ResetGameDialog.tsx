@@ -1,13 +1,13 @@
 import styles from "./ResetGameDialog.module.css";
 
 type ResetGameDialogProps = {
-    onCancel: () => void;
-    onConfirm: () => void;
+    onCancelAction: () => void;
+    onConfirmAction: () => void;
 };
 
 export default function ResetGameDialog({
-                                            onCancel,
-                                            onConfirm,
+                                            onCancelAction,
+                                            onConfirmAction,
                                         }: ResetGameDialogProps) {
     return (
         <div className={styles.dialogOverlay}>
@@ -24,7 +24,7 @@ export default function ResetGameDialog({
                     <button
                         type="button"
                         className={styles.cancelButton}
-                        onClick={onCancel}
+                        onClick={onCancelAction}
                     >
                         Vazgeç
                     </button>
@@ -32,7 +32,7 @@ export default function ResetGameDialog({
                     <button
                         type="button"
                         className={styles.confirmResetButton}
-                        onClick={onConfirm}
+                        onClick={onConfirmAction}
                     >
                         Sıfırla
                     </button>
