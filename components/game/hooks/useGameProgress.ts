@@ -3,46 +3,23 @@
 import { useEffect, useRef, useState } from "react";
 
 import {
+    applyGameAction,
+    type GameAction,
+    type GameActionResult,
+} from "@/lib/game-actions";
+import {
     finishGameSession,
+    sendGameAction,
     startGameSession,
 } from "@/lib/game-session-client";
-import {
-    deleteTurkeyPlateProgress,
-    initialTurkeyPlateProgress,
-    loadTurkeyPlateProgress,
-    saveTurkeyPlateProgress,
-    type TurkeyPlateProgress,
-    withGameSession,
-} from "@/lib/turkey-plate-progress";
+import type { TurkeyPlateProgress } from "@/lib/game-state";
 import type { GameMode, GameResult } from "@/types/game";
 
-async function loadOrStartGame(
-    gameMode: GameMode,
-    userId: string
-): Promise<TurkeyPlateProgress> {
-    const savedProgress = await loadTurkeyPlateProgress(gameMode, userId);
-
-    if (
-        savedProgress.isGameComplete ||
-        (savedProgress.sessionId && savedProgress.startedAt)
-    ) {
-        return savedProgress;
-    }
-
-    const session = await startGameSession(gameMode);
-    const progressWithSession = withGameSession(
-        savedProgress,
-        session
-    );
-
-    await saveTurkeyPlateProgress(progressWithSession, gameMode, userId);
-
-    return progressWithSession;
-}
-
-// Oyun ilerlemesinin yüklenmesi, sıralı kaydedilmesi, session'ın başlatılıp
-// bitirilmesi ve sıfırlama. Arayüz durumu (toast, animasyon) Game'de kalıyor.
-export function useGameProgress(gameMode: GameMode, userId: string) {
+// Oyun durumunun tarayıcıdaki yönetimi. Doğruluğun kaynağı sunucu
+// (/api/game/action); burada aynı kurallar (applyGameAction) iyimser olarak
+// uygulanır ki ekran istek dönmesini beklemesin. Sunucu bir eylemi reddederse
+// onun döndürdüğü duruma geri dönülür. Arayüz durumu (toast, animasyon) Game'de.
+export function useGameProgress(gameMode: GameMode) {
     const [progress, setProgress] =
         useState<TurkeyPlateProgress | null>(null);
     const [progressError, setProgressError] =
@@ -56,12 +33,14 @@ export function useGameProgress(gameMode: GameMode, userId: string) {
         gameMode: GameMode;
         promise: Promise<TurkeyPlateProgress>;
     } | null>(null);
-    // Handler'lar en güncel state'i buradan okur: render'daki `progress`,
+    // Handler'lar en güncel durumu buradan okur: render'daki `progress`,
     // yeniden render olmadan gelen ardışık olaylarda eski kalabilir.
     const progressRef = useRef<TurkeyPlateProgress | null>(null);
-    const progressSaveQueueRef = useRef<Promise<void>>(
-        Promise.resolve()
-    );
+    // Sunucuya giden eylemler sırayla gider; biri bitmeden diğeri başlamaz.
+    const syncQueueRef = useRef<Promise<void>>(Promise.resolve());
+    // Sunucuyla eşitleme ya da yeniden başlatma olunca artar; kuyrukta bekleyen
+    // ve artık geçersiz duruma göre üretilmiş eylemler gönderilmeden atlanır.
+    const syncGenerationRef = useRef(0);
 
     useEffect(() => {
         let isCurrent = true;
@@ -69,7 +48,7 @@ export function useGameProgress(gameMode: GameMode, userId: string) {
         const progressRequest =
             existingRequest?.gameMode === gameMode
                 ? existingRequest.promise
-                : loadOrStartGame(gameMode, userId);
+                : startGameSession(gameMode);
 
         progressRequestRef.current = {
             gameMode,
@@ -91,11 +70,7 @@ export function useGameProgress(gameMode: GameMode, userId: string) {
                     savedProgress.isGameComplete &&
                     savedProgress.sessionId
                 ) {
-                    void finishGameSession(
-                        gameMode,
-                        savedProgress.sessionId,
-                        savedProgress
-                    )
+                    void finishGameSession(gameMode, savedProgress.sessionId)
                         .then((result) => {
                             if (isCurrent) {
                                 setGameResult(result);
@@ -119,7 +94,7 @@ export function useGameProgress(gameMode: GameMode, userId: string) {
                     return;
                 }
 
-                console.error("Progress yüklenemedi:", error);
+                console.error("Oyun yüklenemedi:", error);
 
                 setProgressError(
                     "Oyun ilerlemesi yüklenemedi."
@@ -129,91 +104,102 @@ export function useGameProgress(gameMode: GameMode, userId: string) {
         return () => {
             isCurrent = false;
         };
-    }, [gameMode, userId]);
-
-    function getLatestProgress() {
-        return progressRef.current;
-    }
+    }, [gameMode]);
 
     function updateProgress(nextProgress: TurkeyPlateProgress) {
         progressRef.current = nextProgress;
         setProgress(nextProgress);
     }
 
-    // Kayıtlar sırayla gider; önceki kayıt hata verse bile sıradaki çalışır.
-    function queueProgressSave(
-        nextProgress: TurkeyPlateProgress
-    ): Promise<void> {
-        const saveRequest = progressSaveQueueRef.current
-            .catch(() => undefined)
-            .then(() =>
-                saveTurkeyPlateProgress(nextProgress, gameMode, userId)
-            );
+    function enqueueSync(task: () => Promise<void>): Promise<void> {
+        const run = syncQueueRef.current.then(task);
 
-        progressSaveQueueRef.current = saveRequest.catch(() => undefined);
+        syncQueueRef.current = run.catch(() => undefined);
 
-        return saveRequest;
+        return run;
     }
 
-    // İpucu kullanımı: arka planda kaydet, hata olursa göster.
-    function persistHintProgress(nextProgress: TurkeyPlateProgress) {
-        void queueProgressSave(nextProgress).catch((error) => {
-            console.error("İpucu ilerlemesi kaydedilemedi:", error);
-            setProgressError(
-                "İpucu kaydedilemedi. İnternet bağlantını kontrol et."
-            );
-        });
-    }
-
-    // İl tamamlandı: kaydet; oyun bittiyse resmî sonucu sunucudan al.
-    async function persistCompletedProvince(
-        nextProgress: TurkeyPlateProgress
+    // Sunucu reddetti: onun bildiği duruma dön, kuyruktaki eski eylemleri at.
+    function resyncWithServer(
+        serverProgress: TurkeyPlateProgress,
+        message: string
     ) {
-        try {
-            await queueProgressSave(nextProgress);
+        syncGenerationRef.current += 1;
+        updateProgress(serverProgress);
+        setProgressError(
+            `${message} Oyun sunucudaki kayda göre güncellendi.`
+        );
+    }
 
-            if (nextProgress.isGameComplete && nextProgress.sessionId) {
-                const result = await finishGameSession(
-                    gameMode,
-                    nextProgress.sessionId,
-                    nextProgress
-                );
+    // Eylemi uygular. Kural ihlali varsa (yanlış il, ipucu kalmadı vb.) hiçbir
+    // şey değişmez ve sonuç `ok: false` döner; Game buna göre tepki verir.
+    // Oyun henüz yüklenmediyse null döner.
+    function dispatchAction(action: GameAction): GameActionResult | null {
+        const currentProgress = progressRef.current;
+        const sessionId = currentProgress?.sessionId;
 
-                setGameResult(result);
+        if (!currentProgress || !sessionId) {
+            return null;
+        }
+
+        const result = applyGameAction(currentProgress, action);
+
+        if (!result.ok) {
+            return result;
+        }
+
+        updateProgress(result.progress);
+
+        const generation = syncGenerationRef.current;
+        const isFinishingMove = result.progress.isGameComplete;
+
+        void enqueueSync(async () => {
+            if (generation !== syncGenerationRef.current) {
+                return;
             }
-        } catch (error) {
+
+            const response = await sendGameAction(gameMode, sessionId, action);
+
+            if (!response.accepted) {
+                resyncWithServer(response.progress, response.error);
+                return;
+            }
+
+            // Son il sunucuda da kabul edildi → resmî sonucu iste.
+            if (isFinishingMove) {
+                setGameResult(await finishGameSession(gameMode, sessionId));
+            }
+        }).catch((error) => {
             console.error("Oyun ilerlemesi/sonucu kaydedilemedi:", error);
 
             setProgressError(
-                "İlerleme veya oyun sonucu kaydedilemedi. İnternet bağlantını kontrol et."
+                isFinishingMove
+                    ? "Oyun sonucu kaydedilemedi. Sayfayı yenileyerek tekrar deneyebilirsin."
+                    : "İlerleme kaydedilemedi. İnternet bağlantını kontrol et."
             );
-        }
+        });
+
+        return result;
     }
 
     // Başarılıysa true döner; Game arayüz durumunu ancak o zaman sıfırlar.
     async function restartGame(): Promise<boolean> {
+        // Kuyrukta bekleyen eylemler eski oyuna ait; gönderilmesinler.
+        syncGenerationRef.current += 1;
+
         try {
-            setProgressError(null);
+            await syncQueueRef.current;
 
-            await progressSaveQueueRef.current.catch(() => undefined);
-            await deleteTurkeyPlateProgress(gameMode);
+            const restartedProgress = await startGameSession(gameMode, true);
 
-            const initialProgress = initialTurkeyPlateProgress(gameMode);
-            updateProgress(initialProgress);
-            setGameResult(null);
-
-            const session = await startGameSession(gameMode, true);
-            const restartedProgress = withGameSession(
-                initialProgress,
-                session
-            );
-
+            syncGenerationRef.current += 1;
             updateProgress(restartedProgress);
-            await queueProgressSave(restartedProgress);
+            setGameResult(null);
+            setProgressError(null);
 
             return true;
         } catch (error) {
-            console.error("Progress sıfırlanamadı:", error);
+            console.error("Oyun sıfırlanamadı:", error);
 
             setProgressError(
                 "Oyun sıfırlanırken bir hata oluştu."
@@ -227,10 +213,7 @@ export function useGameProgress(gameMode: GameMode, userId: string) {
         progress,
         progressError,
         gameResult,
-        getLatestProgress,
-        updateProgress,
-        persistHintProgress,
-        persistCompletedProvince,
+        dispatchAction,
         restartGame,
     };
 }

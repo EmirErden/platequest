@@ -48,8 +48,9 @@ Oyun süresi sunucuda tutulur: oyun başladığında ve bittiğinde zaman damgas
 
 API uç noktaları:
 
-- `POST /api/game/start` — Oyun session'ı başlatır veya aktif olanı döndürür.
-- `POST /api/game/finish` — Session'ı bitirir, süreyi ve ipucu cezasını hesaplayıp sonucu kaydeder.
+- `POST /api/game/start` — Kayıtlı oyunu döndürür ya da yeni bir oyun (session + başlangıç durumu) başlatır.
+- `POST /api/game/action` — Tek bir oyun eylemini (isim doğru, ipucu, il tıklama) sunucuda doğrular ve kaydeder.
+- `POST /api/game/finish` — Oyunun sunucu kaydında bittiğini doğrular, süreyi ve ipucu cezasını kayıttan hesaplayıp sonucu kaydeder.
 - `GET /auth/callback` — Supabase e-posta bağlantıları (doğrulama, şifre sıfırlama) için oturum değişimi.
 
 ## Teknolojiler
@@ -100,7 +101,7 @@ Veritabanı şeması (tablolar, RLS policy'leri, trigger'lar ve yetkiler) `supab
 | `game_results` | Tamamlanan oyunların süre ve ipucu sonuçları (`final_time_ms` veritabanında hesaplanır) |
 | `leaderboard_entries` | Skor tablosu için hazırlandı, henüz uygulamada kullanılmıyor |
 
-`profiles` ve `user_game_progress` tablolarına kullanıcının kendi oturumuyla, `game_sessions` ve `game_results` tablolarına ise sunucudan gizli anahtarla erişilir. Tüm tablolarda RLS açıktır.
+Oyunun doğruluk kaynağı sunucudur: `user_game_progress`, `game_sessions` ve `game_results` tablolarına yalnızca sunucu gizli anahtarla yazar; her cevap ve ipucu `/api/game/action`'da doğrulanır, sonuç da bu kayıttan hesaplanır. Kullanıcı kendi oturumuyla sadece `profiles`'ı ve kendi kayıtlarını okuyabilir. Tüm tablolarda RLS açıktır.
 
 Supabase CLI projeye geliştirme bağımlılığı olarak eklidir (`npx supabase ...`). Şema komutları için [Docker Desktop](https://www.docker.com/products/docker-desktop/) gerekir.
 
@@ -166,7 +167,7 @@ npm run db:types
 ```
 app/                  Sayfalar, API route'ları ve layout'lar
   (protected)/        Giriş gerektiren sayfalar (oyun, profil)
-  api/game/           Oyun başlatma ve bitirme uç noktaları
+  api/game/           Oyun başlatma, eylem ve bitirme uç noktaları
 components/           Oyun, harita, profil ve ortak arayüz bileşenleri
 data/provinces.ts     81 ilin plaka, bölge ve komşu bilgileri
 lib/                  Supabase istemcileri, ilerleme ve süre hesaplama yardımcıları

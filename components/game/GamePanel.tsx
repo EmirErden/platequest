@@ -10,7 +10,7 @@ type GamePanelProps = {
     provinceName: string;
     onCorrectNameAction: () => void;
     onMapHintAction: () => void;
-    onNameHintAction: (nextHintCount: number) => void;
+    onNameHintAction: () => void;
     nameHintCount: number;
     mapHintLevel: number;
     region: string;
@@ -73,7 +73,7 @@ export default function GamePanel({
         const nextHintPrefix = provinceCharacters
             .slice(0, nextHintCount)
             .join("");
-        onNameHintAction(nextHintCount);
+        onNameHintAction();
         setAnswer((currentAnswer) => {
             const suffixCharacters = Array.from(
                 currentAnswer.slice(hintPrefix.length)

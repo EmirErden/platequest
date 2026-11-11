@@ -24,7 +24,6 @@ import {
     NEIGHBOR_HINT_PENALTY_MS,
     REGION_HINT_PENALTY_MS,
 } from "@/lib/game-timing";
-import type { TurkeyPlateProgress } from "@/lib/turkey-plate-progress";
 
 import type { GameMode } from "@/types/game";
 
@@ -35,21 +34,17 @@ const WRONG_PROVINCE_FLASH_MS = 500;
 
 type GameProps = {
     gameMode: GameMode;
-    userId: string;
     username: string | null;
 };
 
-export default function Game({ gameMode, userId, username }: GameProps) {
+export default function Game({ gameMode, username }: GameProps) {
     const {
         progress,
         progressError,
         gameResult,
-        getLatestProgress,
-        updateProgress,
-        persistHintProgress,
-        persistCompletedProvince,
+        dispatchAction,
         restartGame,
-    } = useGameProgress(gameMode, userId);
+    } = useGameProgress(gameMode);
 
     const {
         penaltyFeedback,
@@ -96,138 +91,64 @@ export default function Game({ gameMode, userId, username }: GameProps) {
         return () => window.clearTimeout(timeout);
     }, [wrongProvince]);
 
+    // Oyun kuralları lib/game-actions.ts'te (applyGameAction); burada sadece
+    // eylemin sonucuna göre arayüz tepkileri (ceza animasyonu, toast vb.) var.
+
     function handleCorrectName() {
-        const activeProgress = getLatestProgress();
-
-        if (!activeProgress || activeProgress.isGameComplete) {
-            return;
-        }
-
-        updateProgress({
-            ...activeProgress,
-            phase: "map",
-        });
+        dispatchAction({ type: "correct_name" });
     }
 
-    function handleNameHint(nextHintCount: number) {
-        const activeProgress = getLatestProgress();
+    function handleNameHint() {
+        const result = dispatchAction({ type: "letter_hint" });
 
-        if (
-            !activeProgress ||
-            activeProgress.isGameComplete ||
-            nextHintCount <= activeProgress.nameHintCount
-        ) {
-            return;
+        if (result?.ok) {
+            enqueuePenaltyFeedback(LETTER_HINT_PENALTY_MS);
         }
-
-        const updatedProgress: TurkeyPlateProgress = {
-            ...activeProgress,
-            usedHintForCurrentProvince: true,
-            nameHintCount: nextHintCount,
-            letterHintsUsed:
-                activeProgress.letterHintsUsed +
-                (nextHintCount - activeProgress.nameHintCount),
-        };
-
-        updateProgress(updatedProgress);
-        enqueuePenaltyFeedback(
-            (nextHintCount - activeProgress.nameHintCount) *
-            LETTER_HINT_PENALTY_MS
-        );
-        persistHintProgress(updatedProgress);
     }
 
     function handleMapHint() {
-        const activeProgress = getLatestProgress();
+        const result = dispatchAction({ type: "map_hint" });
 
-        if (
-            !activeProgress ||
-            activeProgress.isGameComplete ||
-            activeProgress.mapHintLevel >= 2
-        ) {
-            return;
+        if (result?.ok) {
+            enqueuePenaltyFeedback(
+                result.progress.mapHintLevel === 1
+                    ? REGION_HINT_PENALTY_MS
+                    : NEIGHBOR_HINT_PENALTY_MS
+            );
         }
-
-        const nextMapHintLevel = activeProgress.mapHintLevel + 1;
-        const updatedProgress: TurkeyPlateProgress = {
-            ...activeProgress,
-            usedHintForCurrentProvince: true,
-            mapHintLevel: nextMapHintLevel,
-            regionHintsUsed:
-                activeProgress.regionHintsUsed +
-                (nextMapHintLevel === 1 ? 1 : 0),
-            neighborHintsUsed:
-                activeProgress.neighborHintsUsed +
-                (nextMapHintLevel === 2 ? 1 : 0),
-        };
-
-        updateProgress(updatedProgress);
-        enqueuePenaltyFeedback(
-            nextMapHintLevel === 1
-                ? REGION_HINT_PENALTY_MS
-                : NEIGHBOR_HINT_PENALTY_MS
-        );
-        persistHintProgress(updatedProgress);
     }
 
     function handleProvinceClick(provinceName: string) {
-        const activeProgress = getLatestProgress();
+        const result = dispatchAction({ type: "answer", provinceName });
 
-        if (
-            !activeProgress ||
-            activeProgress.isGameComplete ||
-            activeProgress.completedProvinces.includes(provinceName)
-        ) {
+        if (!result) {
             return;
         }
 
-        // Beklenen il render'daki değerden değil en güncel state'ten
-        // hesaplanıyor: ekran yenilenmeden gelen ikinci tıklama eski ile
-        // karşılaştırılmasın.
-        const expectedProvince =
-            provinces[activeProgress.provinceOrder[activeProgress.currentIndex]];
+        if (!result.ok) {
+            // Tamamlanmış ile ya da bitmiş oyunda tıklama sessizce yok sayılır.
+            if (result.reason === "wrong_province") {
+                setWrongProvince(provinceName);
+            }
 
-        if (provinceName !== expectedProvince.name) {
-            setWrongProvince(provinceName);
             return;
         }
 
-        const nextIndex = activeProgress.currentIndex + 1;
+        const updatedProgress = result.progress;
 
-        const updatedProgress: TurkeyPlateProgress = {
-            ...activeProgress,
-            currentIndex: Math.min(nextIndex, provinces.length - 1),
-            phase: "name",
-            completedProvinces: [
-                ...activeProgress.completedProvinces,
-                provinceName,
-            ],
-            isGameComplete: nextIndex >= provinces.length,
-            hintFreeStreak: activeProgress.usedHintForCurrentProvince
-                ? 0
-                : activeProgress.hintFreeStreak + 1,
-            usedHintForCurrentProvince: false,
-            nameHintCount: 0,
-            mapHintLevel: 0,
-        };
-
-        // Arayüz hemen güncellenir; kayıt arka planda sıraya girer.
-        updateProgress(updatedProgress);
         setLastCompletedProvince(provinceName);
         showToast(
             getCelebrationMessage(
                 updatedProgress.completedProvinces,
                 updatedProgress.hintFreeStreak,
-                expectedProvince.name
-            ) ?? `${expectedProvince.name} tamamlandı!`
+                provinceName
+            ) ?? `${provinceName} tamamlandı!`
         );
 
         if (updatedProgress.isGameComplete) {
             setShouldAnimateCompletion(true);
             fireCompletionConfetti();
         }
-
-        void persistCompletedProvince(updatedProgress);
     }
 
     async function handleRestart() {

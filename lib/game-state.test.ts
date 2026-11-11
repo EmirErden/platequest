@@ -6,7 +6,7 @@ import {
     parseTurkeyPlateProgress,
     type TurkeyPlateProgress,
     withGameSession,
-} from "@/lib/turkey-plate-progress";
+} from "@/lib/game-state";
 import type { GameMode } from "@/types/game";
 
 const SESSION = {

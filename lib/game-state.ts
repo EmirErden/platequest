@@ -1,12 +1,8 @@
-"use client";
-
+// Oyun durumunun tipi, başlangıç durumu ve DB'den gelen JSON'un doğrulanması.
+// Saf modül: hem tarayıcı (iyimser güncelleme) hem sunucu (API route'ları)
+// kullanıyor; buraya Supabase istemcisi ya da "use client" ekleme.
 import { provinces } from "@/data/provinces";
-import { createClient } from "@/lib/supabase/client";
-import {
-    getDatabaseGameMode,
-    type GameMode,
-    type GameSessionInfo,
-} from "@/types/game";
+import type { GameMode, GameSessionInfo } from "@/types/game";
 
 export type TurkeyPlateProgress = {
     version: 2;
@@ -191,82 +187,6 @@ export function parseTurkeyPlateProgress(
                 ? (progress.mapHintLevel as number)
                 : 0,
     };
-}
-
-export async function loadTurkeyPlateProgress(
-    gameMode: GameMode,
-    userId: string
-): Promise<TurkeyPlateProgress> {
-    const supabase = createClient();
-
-    const { data, error } = await supabase
-        .from("user_game_progress")
-        .select("state")
-        .eq("game_mode", getDatabaseGameMode(gameMode))
-        .maybeSingle();
-
-    if (error) {
-        throw error;
-    }
-
-    if (!data) {
-        const initialProgress =
-            initialTurkeyPlateProgress(gameMode);
-
-        await saveTurkeyPlateProgress(
-            initialProgress,
-            gameMode,
-            userId
-        );
-
-        return initialProgress;
-    }
-
-    return parseTurkeyPlateProgress(data.state, gameMode);
-}
-
-export async function saveTurkeyPlateProgress(
-    progress: TurkeyPlateProgress,
-    gameMode: GameMode,
-    // Sunucudaki sayfadan geliyor; her kayıtta Auth'a sormaya gerek yok.
-    // Başka bir ID gönderilse bile RLS (auth.uid() = user_id) yazmayı reddeder.
-    userId: string
-): Promise<void> {
-    const supabase = createClient();
-
-    const { error } = await supabase
-        .from("user_game_progress")
-        .upsert(
-            {
-                user_id: userId,
-                game_mode: getDatabaseGameMode(gameMode),
-                state: progress,
-                status: progress.isGameComplete
-                    ? "completed"
-                    : "in_progress",
-                updated_at: new Date().toISOString(),
-            },
-            {
-                onConflict: "user_id,game_mode",
-            }
-        );
-
-    if (error) {
-        throw error;
-    }
-}
-
-export async function deleteTurkeyPlateProgress(gameMode: GameMode): Promise<void> {
-    const supabase = createClient();
-
-    const { error } = await supabase
-        .from("user_game_progress")
-        .delete()
-        .eq("game_mode", getDatabaseGameMode(gameMode));
-
-    if (error) {
-        throw error;
-    }
 }
 
 function createProvinceOrder(gameMode: GameMode): number[] {

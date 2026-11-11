@@ -7,7 +7,6 @@ export default async function RandomPlatePage() {
     return (
         <Game
             gameMode="random-plate"
-            userId={user.id}
             username={user.username}
         />
     );

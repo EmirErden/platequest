@@ -1,7 +1,7 @@
+import { readStoredProgress } from "@/lib/game-progress-server";
 import {
     calculatePenaltyTimeMs,
     isValidHintUsage,
-    type HintUsage,
 } from "@/lib/game-timing";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -20,7 +20,8 @@ const SESSION_COLUMNS = "id, user_id, game_mode, started_at, finished_at";
 const RESULT_COLUMNS =
     "session_id, play_time_ms, penalty_time_ms, final_time_ms, letter_hints_used, region_hints_used, neighbor_hints_used, completed_at";
 
-type FinishRequest = HintUsage & {
+// İpucu sayıları istekte YOK: sunucu kendi kaydından okur, istemciye güvenmez.
+type FinishRequest = {
     gameMode: unknown;
     sessionId: unknown;
 };
@@ -62,8 +63,7 @@ export async function POST(request: Request) {
         !body ||
         !isGameMode(body.gameMode) ||
         typeof body.sessionId !== "string" ||
-        !UUID_PATTERN.test(body.sessionId) ||
-        !isValidHintUsage(body)
+        !UUID_PATTERN.test(body.sessionId)
     ) {
         return Response.json(
             { error: "Geçersiz oyun bitirme isteği." },
@@ -107,6 +107,40 @@ export async function POST(request: Request) {
         return Response.json(existingResult);
     }
 
+    // Session kapatılmadan ÖNCE: oyun sunucunun kaydında gerçekten bitti mi?
+    // İlerlemeyi sadece sunucu yazdığı için bu kayıt istemciden bağımsız.
+    let storedProgress;
+
+    try {
+        storedProgress = await readStoredProgress(admin, user.id, body.gameMode);
+    } catch (error) {
+        console.error("Oyun ilerlemesi okunamadı:", error);
+        return Response.json(
+            { error: "Oyun sonucu kaydedilemedi." },
+            { status: 500 }
+        );
+    }
+
+    const progress = storedProgress?.progress;
+
+    if (
+        !progress ||
+        progress.sessionId !== session.id ||
+        !progress.isGameComplete
+    ) {
+        return Response.json(
+            { error: "Oyun henüz tamamlanmadı." },
+            { status: 409 }
+        );
+    }
+
+    if (!isValidHintUsage(progress)) {
+        return Response.json(
+            { error: "Oyun kaydı geçersiz." },
+            { status: 409 }
+        );
+    }
+
     const finishedSession = await finishSession(admin, session);
 
     if (!finishedSession?.finished_at) {
@@ -127,7 +161,7 @@ export async function POST(request: Request) {
     }
 
     const playTimeMs = Math.max(0, finishedAtMs - startedAtMs);
-    const penaltyTimeMs = calculatePenaltyTimeMs(body);
+    const penaltyTimeMs = calculatePenaltyTimeMs(progress);
 
     const { data: insertedResult, error: insertError } = await admin
         .from("game_results")
@@ -137,9 +171,9 @@ export async function POST(request: Request) {
             game_mode: databaseGameMode,
             play_time_ms: playTimeMs,
             penalty_time_ms: penaltyTimeMs,
-            letter_hints_used: body.letterHintsUsed,
-            region_hints_used: body.regionHintsUsed,
-            neighbor_hints_used: body.neighborHintsUsed,
+            letter_hints_used: progress.letterHintsUsed,
+            region_hints_used: progress.regionHintsUsed,
+            neighbor_hints_used: progress.neighborHintsUsed,
             completed_at: finishedSession.finished_at,
         })
         .select(RESULT_COLUMNS)

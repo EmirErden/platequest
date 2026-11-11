@@ -7,7 +7,6 @@ export default async function OrderedPlatePage() {
     return (
         <Game
             gameMode="ordered-plate"
-            userId={user.id}
             username={user.username}
         />
     );

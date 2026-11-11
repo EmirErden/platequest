@@ -1,16 +1,25 @@
 "use client";
 
-import type {
-    GameMode,
-    GameResult,
-    GameSessionInfo,
-} from "@/types/game";
-import type { HintUsage } from "@/lib/game-timing";
+import type { GameAction } from "@/lib/game-actions";
+import {
+    parseTurkeyPlateProgress,
+    type TurkeyPlateProgress,
+} from "@/lib/game-state";
+import type { GameMode, GameResult } from "@/types/game";
 
+// Tarayıcının oyun API'leriyle konuştuğu tek yer. Yanıtlar `unknown` kabul
+// edilip doğrulanır.
+
+export type GameActionResponse =
+    | { accepted: true }
+    // Sunucu eylemi reddetti; istemci bu duruma geri dönmeli.
+    | { accepted: false; error: string; progress: TurkeyPlateProgress };
+
+// Kayıtlı oyunu yükler, yoksa (ya da forceNew ile) yenisini başlatır.
 export async function startGameSession(
     gameMode: GameMode,
     forceNew = false
-): Promise<GameSessionInfo> {
+): Promise<TurkeyPlateProgress> {
     const response = await fetch("/api/game/start", {
         method: "POST",
         headers: {
@@ -29,17 +38,55 @@ export async function startGameSession(
         throw new Error(readError(body, "Oyun başlatılamadı."));
     }
 
-    if (!isGameSessionInfo(body)) {
-        throw new Error("Sunucu geçersiz bir oyun session'ı döndürdü.");
+    const progress = readProgress(body, gameMode);
+
+    if (!progress) {
+        throw new Error("Sunucu geçersiz bir oyun durumu döndürdü.");
     }
 
-    return body;
+    return progress;
+}
+
+export async function sendGameAction(
+    gameMode: GameMode,
+    sessionId: string,
+    action: GameAction
+): Promise<GameActionResponse> {
+    const response = await fetch("/api/game/action", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            gameMode,
+            sessionId,
+            action,
+        }),
+    });
+
+    const body: unknown = await response.json();
+
+    if (response.ok) {
+        return { accepted: true };
+    }
+
+    const serverProgress =
+        response.status === 409 ? readProgress(body, gameMode) : null;
+
+    if (serverProgress) {
+        return {
+            accepted: false,
+            error: readError(body, "İşlem kabul edilmedi."),
+            progress: serverProgress,
+        };
+    }
+
+    throw new Error(readError(body, "İlerleme kaydedilemedi."));
 }
 
 export async function finishGameSession(
     gameMode: GameMode,
-    sessionId: string,
-    hints: HintUsage
+    sessionId: string
 ): Promise<GameResult> {
     const response = await fetch("/api/game/finish", {
         method: "POST",
@@ -49,7 +96,6 @@ export async function finishGameSession(
         body: JSON.stringify({
             gameMode,
             sessionId,
-            ...hints,
         }),
     });
 
@@ -66,18 +112,22 @@ export async function finishGameSession(
     return body;
 }
 
-function isGameSessionInfo(value: unknown): value is GameSessionInfo {
+// `{ progress: {...} }` gövdesinden oyun durumunu okur.
+function readProgress(
+    value: unknown,
+    gameMode: GameMode
+): TurkeyPlateProgress | null {
     if (!value || typeof value !== "object") {
-        return false;
+        return null;
     }
 
-    const session = value as Record<string, unknown>;
+    const progress = (value as Record<string, unknown>).progress;
 
-    return (
-        typeof session.sessionId === "string" &&
-        typeof session.startedAt === "string" &&
-        Number.isFinite(Date.parse(session.startedAt))
-    );
+    if (!progress || typeof progress !== "object") {
+        return null;
+    }
+
+    return parseTurkeyPlateProgress(progress, gameMode);
 }
 
 function isGameResult(value: unknown): value is GameResult {
