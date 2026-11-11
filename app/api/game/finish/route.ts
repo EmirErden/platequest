@@ -5,6 +5,7 @@ import {
 } from "@/lib/game-timing";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import type { Tables } from "@/types/database";
 import {
     getDatabaseGameMode,
     isGameMode,
@@ -14,6 +15,8 @@ import {
 const UUID_PATTERN =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+const SESSION_COLUMNS = "id, user_id, game_mode, started_at, finished_at";
+
 const RESULT_COLUMNS =
     "session_id, play_time_ms, penalty_time_ms, final_time_ms, letter_hints_used, region_hints_used, neighbor_hints_used, completed_at";
 
@@ -22,13 +25,22 @@ type FinishRequest = HintUsage & {
     sessionId: unknown;
 };
 
-type SessionRow = {
-    id: string;
-    user_id: string;
-    game_mode: string;
-    started_at: string;
-    finished_at: string | null;
-};
+type SessionRow = Pick<
+    Tables<"game_sessions">,
+    "id" | "user_id" | "game_mode" | "started_at" | "finished_at"
+>;
+
+type ResultRow = Pick<
+    Tables<"game_results">,
+    | "session_id"
+    | "play_time_ms"
+    | "penalty_time_ms"
+    | "final_time_ms"
+    | "letter_hints_used"
+    | "region_hints_used"
+    | "neighbor_hints_used"
+    | "completed_at"
+>;
 
 export async function POST(request: Request) {
     const supabase = await createClient();
@@ -63,9 +75,9 @@ export async function POST(request: Request) {
     const databaseGameMode = getDatabaseGameMode(body.gameMode);
     const { data: session, error: sessionError } = await admin
         .from("game_sessions")
-        .select("id, user_id, game_mode, started_at, finished_at")
+        .select(SESSION_COLUMNS)
         .eq("id", body.sessionId)
-        .maybeSingle<SessionRow>();
+        .maybeSingle();
 
     if (sessionError) {
         console.error("Oyun session'ı okunamadı:", sessionError);
@@ -97,7 +109,7 @@ export async function POST(request: Request) {
 
     const finishedSession = await finishSession(admin, session);
 
-    if (!finishedSession) {
+    if (!finishedSession?.finished_at) {
         return Response.json(
             { error: "Oyun sonucu kaydedilemedi." },
             { status: 500 }
@@ -105,7 +117,7 @@ export async function POST(request: Request) {
     }
 
     const startedAtMs = Date.parse(finishedSession.started_at);
-    const finishedAtMs = Date.parse(finishedSession.finished_at ?? "");
+    const finishedAtMs = Date.parse(finishedSession.finished_at);
 
     if (!Number.isFinite(startedAtMs) || !Number.isFinite(finishedAtMs)) {
         return Response.json(
@@ -171,8 +183,8 @@ async function finishSession(
         .eq("id", session.id)
         .eq("user_id", session.user_id)
         .is("finished_at", null)
-        .select("id, user_id, game_mode, started_at, finished_at")
-        .maybeSingle<SessionRow>();
+        .select(SESSION_COLUMNS)
+        .maybeSingle();
 
     if (error) {
         console.error("Oyun session'ı tamamlanamadı:", error);
@@ -185,10 +197,10 @@ async function finishSession(
 
     const { data: concurrentlyFinished, error: readError } = await admin
         .from("game_sessions")
-        .select("id, user_id, game_mode, started_at, finished_at")
+        .select(SESSION_COLUMNS)
         .eq("id", session.id)
         .eq("user_id", session.user_id)
-        .maybeSingle<SessionRow>();
+        .maybeSingle();
 
     if (readError) {
         console.error("Tamamlanan oyun session'ı okunamadı:", readError);
@@ -224,38 +236,19 @@ async function readRequestBody(request: Request): Promise<FinishRequest | null> 
     }
 }
 
-function toGameResult(result: Record<string, unknown>): GameResult {
+function toGameResult(result: ResultRow): GameResult {
     return {
-        sessionId: readString(result.session_id),
-        playTimeMs: readNonNegativeInteger(result.play_time_ms),
-        penaltyTimeMs: readNonNegativeInteger(result.penalty_time_ms),
-        finalTimeMs: readNonNegativeInteger(result.final_time_ms),
-        letterHintsUsed: readNonNegativeInteger(result.letter_hints_used),
-        regionHintsUsed: readNonNegativeInteger(result.region_hints_used),
-        neighborHintsUsed: readNonNegativeInteger(result.neighbor_hints_used),
-        completedAt: readString(result.completed_at),
+        sessionId: result.session_id,
+        playTimeMs: result.play_time_ms,
+        penaltyTimeMs: result.penalty_time_ms,
+        // Hesaplanan sütun (play + penalty); Postgres tipi nullable gösteriyor
+        // ama iki kaynağı da NOT NULL olduğu için pratikte hep dolu.
+        finalTimeMs:
+            result.final_time_ms ??
+            result.play_time_ms + result.penalty_time_ms,
+        letterHintsUsed: result.letter_hints_used,
+        regionHintsUsed: result.region_hints_used,
+        neighborHintsUsed: result.neighbor_hints_used,
+        completedAt: result.completed_at,
     };
-}
-
-function readString(value: unknown): string {
-    if (typeof value !== "string") {
-        throw new Error("Supabase returned an invalid string value.");
-    }
-
-    return value;
-}
-
-function readNonNegativeInteger(value: unknown): number {
-    const numberValue =
-        typeof value === "string" ? Number(value) : value;
-
-    if (
-        typeof numberValue !== "number" ||
-        !Number.isSafeInteger(numberValue) ||
-        numberValue < 0
-    ) {
-        throw new Error("Supabase returned an invalid duration value.");
-    }
-
-    return numberValue;
 }
