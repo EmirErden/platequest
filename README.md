@@ -66,7 +66,7 @@ API uç noktaları:
 
 Gereksinimler:
 
-- Node.js 20 veya daha güncel bir sürüm
+- Node.js 26 veya daha güncel bir sürüm
 - Bir Supabase projesi
 
 ### 1. Bağımlılıkları yükle
